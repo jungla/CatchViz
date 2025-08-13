@@ -1,0 +1,17 @@
+name: 15-minute-cron
+
+on:
+  schedule:
+    - cron: '*/15 * * * *'
+
+jobs:
+  run-scheduled-task:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      - name: Run my script
+        run: |
+          echo "This job runs every 15 minutes!"
+          # Add your custom commands here, e.g.,
+          # python my_script.py
