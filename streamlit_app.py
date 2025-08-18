@@ -5,6 +5,7 @@ import altair as alt
 import streamlit as st
 import plotly.express as px
 from datetime import date, datetime, timedelta
+import pickle
 
 # --- Page Configuration ---
 st.set_page_config(
@@ -13,49 +14,16 @@ st.set_page_config(
     layout="wide" # Use wide layout for more space for charts
 )
 
-
 landing_sites = ['moa','ndumbani','mkokotoni','fumba','kizimkazi','msuka','wesha','mkoani']
 landing_sites = ['msuka','kojani','mvumoni_furaha','mtangani','sahare','tongoni','kigombe']
 
-# --- Function to Load Data from Excel File ---
-@st.cache_data(ttl=6000) # Cache the data for 10 minutes to avoid re-reading on every rerun
-def load_data_from_excel_file(file_path="CATCH_kobo_data.xlsx"): # Explicitly load 'catch_catch' sheet
 
- catch = pd.read_excel(file_path, engine = 'openpyxl', sheet_name=1)
+with open('CATCH_kobo_data.pkl', 'rb') as f:
+    df = pickle.load(f)
 
- 
- trips = pd.read_excel(file_path, engine = 'openpyxl', sheet_name=0)
- catch = trips.merge(catch, left_on = '_uuid', right_on='_submission__uuid')
+df = df[df['landing_site'].isin(landing_sites)]
 
- catch = catch[catch['survey_real'] == 'real']
- catch = catch[catch['survey_type'] == 'catch']
- 
- catch.loc[catch['Fishing_Trip/gear_type_other'] == 'Handline', 'Fishing_Trip/gear_type/pole_line'] = 1
- catch.loc[catch['Fishing_Trip/gear_type_other'] == 'Handline', 'Fishing_Trip/gear_type'] = 'hand_line'
- catch.loc[catch['Fishing_Trip/gear_type'] == 'pole_line', 'Fishing_Trip/gear_type'] = 'hand_line'
- catch = catch.rename(columns={'Fishing_Trip/gear_type/pole_line': 'Fishing_Trip/gear_type/hand_line'})
- 
- 
- catch = catch[catch['landing_site'].isin(landing_sites)]
- 
- catch['Fishing_Trip/fishing_duration'] = catch['Fishing_Trip/fishing_duration'].replace({'>3': 4})
- 
- catch.loc[catch['Fishing_Trip/fishing_duration'] == '>3', 'Fishing_Trip/fishing_duration'] = 4
- catch.loc[catch['Fishing_Trip/fishing_duration'] != catch['Fishing_Trip/fishing_duration'], 'Fishing_Trip/fishing_duration'] = 1
- 
- catch['people'] = catch['people'].astype('float') 
- catch['boats_landed'] = catch['boats_landed'] + 1 # to include also the boat that was sampled
- catch['gear_type'] = catch['Fishing_Trip/gear_type']
- catch['boat_type'] = catch['Fishing_Trip/boat_type']
- catch['weight_catch'] = catch['Total_Catch_Survey/catch_catch/weight_catch']
- catch['group_catch'] = catch['Total_Catch_Survey/catch_catch/group_catch'] 
- # fishing effort per day [fishers/day]
-
- return catch
-
-# --- Load Data ---
-# Call the function to load data from the Excel file's 'catch_catch' sheet
-df = load_data_from_excel_file(file_path="CATCH_kobo_data.xlsx")
+#print(loaded_data)
 
 # --- Sidebar Filters ---
 st.sidebar.header("Filters ⚙️")
@@ -206,7 +174,7 @@ if not filtered_df.empty:
   st.subheader("Landings by Species Group")
   site_catch_df = filtered_df.groupby(['group_catch','landing_site'])['_uuid'].count().reset_index().sort_values(by='_uuid', ascending=False)
 
-  print(site_catch_df)
+  #print(site_catch_df)
 
   fig_group = alt.Chart(site_catch_df).mark_bar().encode(
     x = alt.X('landing_site', title='Landing Site'),
