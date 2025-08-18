@@ -2,4 +2,3 @@ streamlit
 plotly
 openpyxl
 altair
-pickle
