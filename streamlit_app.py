@@ -1,95 +1,157 @@
 import streamlit as st
 import pandas as pd
 import numpy as np
+import altair as alt
+import streamlit as st
 import plotly.express as px
-from datetime import datetime, timedelta
+from datetime import date, datetime, timedelta
 
 # --- Page Configuration ---
 st.set_page_config(
-    page_title="Fishery Catch Data Visualization",
+    page_title="Artisanal Landings Data Visualization",
     page_icon="🎣",
     layout="wide" # Use wide layout for more space for charts
 )
 
-# --- Helper Function to Generate Sample Data ---
-# In a real scenario, you would load your data here, e.g., using pd.read_csv('your_data.csv')
-# Make sure your CSV has columns like 'Date', 'Site', 'Species', 'Catch_Weight_kg', etc.
-# IMPORTANT: Ensure the 'Date' column is converted to datetime objects:
-# df['Date'] = pd.to_datetime(df['Date'])
 
-@st.cache_data # Cache the data generation/loading
-def generate_sample_data(num_records=500):
-    """Generates a DataFrame with sample fishery catch data."""
-    start_date = datetime(2024, 1, 1)
-    dates = [start_date + timedelta(days=np.random.randint(0, 365*1.2)) for _ in range(num_records)] # Spread over ~1 year
-    sites = ['Fumba Bay', 'Nungwi Reef', 'Kizimkazi Channel', 'Mnemba Atoll', 'Paje Kelp Beds']
-    species = ['Tuna', 'Snapper', 'Grouper', 'Mackerel', 'Sardines', 'Octopus', 'Lobster']
-    gear = ['Longline', 'Handline', 'Net', 'Trap', 'Spear']
+landing_sites = ['moa','ndumbani','mkokotoni','fumba','kizimkazi','msuka','wesha','mkoani']
+landing_sites = ['msuka','kojani','mvumoni_furaha','mtangani','sahare','tongoni','kigombe']
 
-    data = {
-        'Date': dates,
-        'Site': np.random.choice(sites, num_records),
-        'Species': np.random.choice(species, num_records),
-        'Catch_Weight_kg': np.random.uniform(5, 150, num_records).round(2), # Random weights
-        'Gear_Type': np.random.choice(gear, num_records)
-    }
-    df = pd.DataFrame(data)
-    df['Date'] = pd.to_datetime(df['Date']).dt.date # Keep only the date part for filtering simplicity
-    df = df.sort_values(by='Date').reset_index(drop=True)
-    return df
+# --- Function to Load Data from Excel File ---
+@st.cache_data(ttl=6000) # Cache the data for 10 minutes to avoid re-reading on every rerun
+def load_data_from_excel_file(file_path="CATCH_kobo_data.xlsx"): # Explicitly load 'catch_catch' sheet
+
+ catch = pd.read_excel(file_path, engine = 'openpyxl', sheet_name=1)
+
+ 
+ trips = pd.read_excel(file_path, engine = 'openpyxl', sheet_name=0)
+ catch = trips.merge(catch, left_on = '_uuid', right_on='_submission__uuid')
+
+ catch = catch[catch['survey_real'] == 'real']
+ catch = catch[catch['survey_type'] == 'catch']
+ 
+ catch.loc[catch['Fishing_Trip/gear_type_other'] == 'Handline', 'Fishing_Trip/gear_type/pole_line'] = 1
+ catch.loc[catch['Fishing_Trip/gear_type_other'] == 'Handline', 'Fishing_Trip/gear_type'] = 'hand_line'
+ catch.loc[catch['Fishing_Trip/gear_type'] == 'pole_line', 'Fishing_Trip/gear_type'] = 'hand_line'
+ catch = catch.rename(columns={'Fishing_Trip/gear_type/pole_line': 'Fishing_Trip/gear_type/hand_line'})
+ 
+ 
+ catch = catch[catch['landing_site'].isin(landing_sites)]
+ 
+ catch['Fishing_Trip/fishing_duration'] = catch['Fishing_Trip/fishing_duration'].replace({'>3': 4})
+ 
+ catch.loc[catch['Fishing_Trip/fishing_duration'] == '>3', 'Fishing_Trip/fishing_duration'] = 4
+ catch.loc[catch['Fishing_Trip/fishing_duration'] != catch['Fishing_Trip/fishing_duration'], 'Fishing_Trip/fishing_duration'] = 1
+ 
+ catch['people'] = catch['people'].astype('float') 
+ catch['boats_landed'] = catch['boats_landed'] + 1 # to include also the boat that was sampled
+ catch['gear_type'] = catch['Fishing_Trip/gear_type']
+ catch['boat_type'] = catch['Fishing_Trip/boat_type']
+ catch['weight_catch'] = catch['Total_Catch_Survey/catch_catch/weight_catch']
+ catch['group_catch'] = catch['Total_Catch_Survey/catch_catch/group_catch'] 
+ # fishing effort per day [fishers/day]
+
+ return catch
 
 # --- Load Data ---
-df = generate_sample_data()
+# Call the function to load data from the Excel file's 'catch_catch' sheet
+df = load_data_from_excel_file(file_path="CATCH_kobo_data.xlsx")
 
 # --- Sidebar Filters ---
 st.sidebar.header("Filters ⚙️")
 
-# Date Filter
-min_date = df['Date'].min()
-max_date = df['Date'].max()
+# Check if DataFrame is empty before attempting to filter
+if df.empty:
+    st.warning("No data loaded. Please check your Excel file, sheet name, and column headers.")
+    # Display an empty DataFrame or a message
+    st.header("Filtered Data Records")
+    st.dataframe(pd.DataFrame(), use_container_width=True) # Display an empty DataFrame
+    st.stop() # Stop further execution if no data
 
-# st.date_input requires datetime.date objects
+# date filter
+
+df['today'] = df['today'].dt.date
+
+min_date = df['today'].min()
+max_date = df['today'].max()
+
 date_range = st.sidebar.date_input(
-    "Select Date Range:",
-    value=(min_date, max_date), # Default range
+    "Select today Range:",
+    value=(min_date, max_date),
     min_value=min_date,
     max_value=max_date,
     key='date_filter'
 )
 
-# Handle case where date_input might return fewer than 2 dates briefly
 start_date = min_date
 end_date = max_date
 if len(date_range) == 2:
     start_date, end_date = date_range
 
-# Site Filter
-all_sites = sorted(df['Site'].unique())
+# site filter
+
+all_sites = sorted(df['landing_site'].unique())
 selected_sites = st.sidebar.multiselect(
     "Select Site(s):",
     options=all_sites,
-    default=all_sites, # Default to all sites selected
+    default=all_sites,
     key='site_filter'
 )
 
+# type catch filter
+
+all_groups = sorted(df['group_catch'].dropna().unique())
+selected_groups = st.sidebar.multiselect(
+    "Select Group(s):",
+    options=all_groups,
+    default=['reef_fish','tuna_like','small_pelagic'],
+    key='group_filter'
+)
+
 # --- Apply Filters ---
-# Filter logic needs to handle datetime.date objects
 filtered_df = df[
-    (df['Date'] >= start_date) &
-    (df['Date'] <= end_date) &
-    (df['Site'].isin(selected_sites))
+    (df['today'] >= date(2022,1,1)) &
+    (df['today'] <= end_date) &
+    (df['landing_site'].isin(selected_sites)) &
+    (df['group_catch'].isin(selected_groups))
 ]
 
 # --- Main Page Content ---
-st.title("🎣 Fishery Catch Data Visualization")
+
+col1, mid, col2 = st.columns([20,1,5])
+
+with col1:
+ st.markdown("""
+     <style>
+     .custom-font {
+         font-family: 'Futura', serif;
+         font-size: 60px !important;
+         font-weight: bold;
+     }
+     </style>
+     <p class="custom-font">Artisanal Fishing Landings</p>
+     """, unsafe_allow_html=True)
+#    st.write('Artisanal Landings Data Visualization')
+
+with col2:
+ if st.context.theme.type == 'dark':
+  st.image('./img/WCS-logo_white.png', width=300)
+ else:
+  st.image('./img/WCS-logo.png', width=300)
+
+#st.title("🎣 Fishery Catch Data Visualization")
 st.markdown(f"Visualizing data from **{start_date.strftime('%Y-%m-%d')}** to **{end_date.strftime('%Y-%m-%d')}** for sites: **{', '.join(selected_sites) if selected_sites else 'None'}**.")
 st.markdown("---") # Separator
 
+
 # --- Display Metrics/KPIs ---
+
+# I would add a time series of sampling days for the landing sites
+
 if not filtered_df.empty:
-    total_catch = filtered_df['Catch_Weight_kg'].sum()
+    total_catch = filtered_df['weight_catch'].sum()
     num_records_filtered = len(filtered_df)
-    avg_catch_per_record = filtered_df['Catch_Weight_kg'].mean()
+    avg_catch_per_record = filtered_df['weight_catch'].mean()
 
     col1, col2, col3 = st.columns(3)
     with col1:
@@ -103,97 +165,92 @@ else:
     st.warning("No data available for the selected filters.")
 
 
+
 # --- Visualizations ---
+
 if not filtered_df.empty:
-    st.header("Catch Analysis")
+ st.header("Landing Records")
 
-    # 1. Catch Weight Over Time (Line Chart)
-    st.subheader("Catch Weight Over Time")
-    # Group by date and sum the catch
-    time_series_df = filtered_df.groupby('Date')['Catch_Weight_kg'].sum().reset_index()
-    fig_time = px.line(
-        time_series_df,
-        x='Date',
-        y='Catch_Weight_kg',
-        title="Total Catch Weight per Day",
-        markers=True,
-        labels={'Catch_Weight_kg': 'Total Catch (kg)'}
-        )
-    fig_time.update_layout(hovermode="x unified")
-    st.plotly_chart(fig_time, use_container_width=True)
-
-    # Split into two columns for side-by-side charts
-    col_viz1, col_viz2 = st.columns(2)
-
-    with col_viz1:
-        # 2. Catch by Site (Bar Chart)
-        st.subheader("Catch by Site")
-        site_catch_df = filtered_df.groupby('Site')['Catch_Weight_kg'].sum().reset_index().sort_values(by='Catch_Weight_kg', ascending=False)
-        fig_site = px.bar(
-            site_catch_df,
-            x='Site',
-            y='Catch_Weight_kg',
-            title="Total Catch Weight per Site",
-            color='Site', # Color bars by site
-            labels={'Catch_Weight_kg': 'Total Catch (kg)'}
-        )
-        fig_site.update_layout(xaxis_title=None) # Hide x-axis title if sites are obvious
-        st.plotly_chart(fig_site, use_container_width=True)
-
-        # 4. Catch by Gear Type (Pie Chart)
-        st.subheader("Catch Distribution by Gear Type")
-        gear_catch_df = filtered_df.groupby('Gear_Type')['Catch_Weight_kg'].sum().reset_index()
-        fig_gear = px.pie(
-            gear_catch_df,
-            names='Gear_Type',
-            values='Catch_Weight_kg',
-            title="Proportion of Catch by Gear Type",
-            hole=0.3 # Make it a donut chart
-        )
-        st.plotly_chart(fig_gear, use_container_width=True)
+ # 1. Catch Weight Over Time (Line Chart)
+ st.subheader('Sampling Effort')
+ effort_time = filtered_df.groupby(['today','landing_site'])['_uuid'].count().reset_index()
+ fig_effort = alt.Chart(effort_time).mark_bar().encode(
+  x=alt.X('today', title='Date'),
+  y=alt.Y('_uuid', title='Number of Records', stack='zero'),
+  color='landing_site'
+  )
+ 
+ st.altair_chart(fig_effort, use_container_width=True)
 
 
-    with col_viz2:
-        # 3. Catch by Species (Bar Chart)
-        st.subheader("Catch by Species")
-        species_catch_df = filtered_df.groupby('Species')['Catch_Weight_kg'].sum().reset_index().sort_values(by='Catch_Weight_kg', ascending=False)
-        fig_species = px.bar(
-            species_catch_df,
-            x='Species',
-            y='Catch_Weight_kg',
-            title="Total Catch Weight per Species",
-            color='Species', # Color bars by species
-            labels={'Catch_Weight_kg': 'Total Catch (kg)'}
-        )
-        fig_species.update_layout(xaxis_title=None)
-        st.plotly_chart(fig_species, use_container_width=True)
+ #st.plotly_chart(fig_time, use_container_width=True)
 
-        # 5. Catch Composition Site vs Species (Heatmap - Optional, needs density)
-        # A heatmap might be complex without more detailed data, but a grouped bar chart is good:
-        st.subheader("Species Catch per Site")
-        site_species_df = filtered_df.groupby(['Site', 'Species'])['Catch_Weight_kg'].sum().reset_index()
-        fig_site_species = px.bar(
-            site_species_df,
-            x='Site',
-            y='Catch_Weight_kg',
-            color='Species', # Stack or group bars by species
-            title='Species Catch Breakdown by Site',
-            barmode='stack', # or 'group'
-            labels={'Catch_Weight_kg': 'Total Catch (kg)'}
-        )
-        st.plotly_chart(fig_site_species, use_container_width=True)
+ # Split into two columns for side-by-side charts
+ col_viz1, col_viz2 = st.columns(2)
 
+ with col_viz1:
+
+  # landings by boat
+  st.subheader("Landings by type of boat")
+  boat_type = filtered_df.groupby('boat_type').count().sort_values(by='_uuid').reset_index()
+
+  fig_boat = alt.Chart(boat_type).mark_bar().encode(
+   x=alt.X('boat_type', title='Type of Fishing Vessel', sort=None),
+   y=alt.Y('_uuid', title='Number of Records')
+   )
+  st.altair_chart(fig_boat, use_container_width=True)
+
+  # landings by gear
+
+  # 2. Catch by Site (Bar Chart)
+  st.subheader("Landings by Group")
+  site_catch_df = filtered_df.groupby('group_catch')['_uuid'].count().reset_index().sort_values(by='_uuid', ascending=False)
+
+  fig_group = alt.Chart(site_catch_df).mark_arc().encode(
+    theta='_uuid',
+    color='group_catch'
+  )
+
+  st.altair_chart(fig_group, use_container_width=True)
+
+ with col_viz2:
+
+  # 4. Catch by Gear Type (Pie Chart)
+
+  st.subheader("Landings by Gear Type")
+  #gear_type = filtered_df.groupby('gear_type')['_uuid'].count().reset_index().sort_values(by='_uuid')[-10:]
+
+  s = pd.Series(filtered_df['gear_type'].dropna()).astype(str)
+  exploded_words = s.str.split(expand=False).explode() # expand=False keeps lists in each row
+  gear_type = pd.DataFrame(exploded_words.value_counts()).reset_index()
+  fig_gear = alt.Chart(gear_type).mark_bar().encode(
+   x=alt.X('gear_type', title='Type of Gear', sort=None),
+   y=alt.Y('count', title='Number of Records')
+   )
+
+  st.altair_chart(fig_gear, use_container_width=True)
 
     # --- Display Filtered Data Table ---
-    st.markdown("---")
-    st.header("Filtered Data Records")
-    st.dataframe(filtered_df, use_container_width=True) # Display the filtered dataframe
+
+#    st.markdown("---")
+#    st.header("Filtered Data Records")
+#    st.dataframe(filtered_df, use_container_width=True) # Display the filtered dataframe
+
+
+ st.header("Catch and Yield Analysis")
+
+ col_viz1, col_viz2 = st.columns(2)
+
+ #with col_viz1:
 
 else:
-    # Only show the raw data view if filters result in empty set
-    st.header("Original Sample Data (Top 100 rows)")
-    st.dataframe(df.head(100), use_container_width=True)
+    # This block is executed if filtered_df is empty (e.g., no data, or filters result in empty set)
+    st.markdown("---")
+    st.warning("No data available for the selected filters. Showing a preview of all loaded data.")
+    st.header("Original Data Preview (Top 10 rows)")
+    st.dataframe(df.head(10), use_container_width=True) # Show head of the full dataset if filters yielded no results
 
 
 st.sidebar.markdown("---")
-st.sidebar.info("This app uses sample data. Replace `generate_sample_data()` with your data loading logic (e.g., `pd.read_csv`).")
+st.sidebar.info("Data collected with Kobotoolbox at landing sites in Tanzani and updated every 10 days. Raw data can be found at https://zenodo.org/records/15229813")
+
