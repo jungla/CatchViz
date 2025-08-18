@@ -190,7 +190,7 @@ if not filtered_df.empty:
 
  with col_viz1:
 
-  # landings by boat
+  # Landings by Boat Type
   st.subheader("Landings by type of boat")
   boat_type = filtered_df.groupby('boat_type').count().sort_values(by='_uuid').reset_index()
 
@@ -200,29 +200,34 @@ if not filtered_df.empty:
    )
   st.altair_chart(fig_boat, use_container_width=True)
 
-  # landings by gear
 
-  # 2. Catch by Site (Bar Chart)
-  st.subheader("Landings by Group")
-  site_catch_df = filtered_df.groupby('group_catch')['_uuid'].count().reset_index().sort_values(by='_uuid', ascending=False)
+  # Landings by Species Group
 
-  fig_group = alt.Chart(site_catch_df).mark_arc().encode(
-    theta='_uuid',
+  st.subheader("Landings by Species Group")
+  site_catch_df = filtered_df.groupby(['group_catch','landing_site'])['_uuid'].count().reset_index().sort_values(by='_uuid', ascending=False)
+
+  print(site_catch_df)
+
+  fig_group = alt.Chart(site_catch_df).mark_bar().encode(
+    x = alt.X('landing_site', title='Landing Site'),
+    y = alt.Y('_uuid', title='Number of landings'),
     color='group_catch'
   )
 
   st.altair_chart(fig_group, use_container_width=True)
 
+
+
  with col_viz2:
 
-  # 4. Catch by Gear Type (Pie Chart)
+  # Landings by Gear Type
 
   st.subheader("Landings by Gear Type")
-  #gear_type = filtered_df.groupby('gear_type')['_uuid'].count().reset_index().sort_values(by='_uuid')[-10:]
 
   s = pd.Series(filtered_df['gear_type'].dropna()).astype(str)
   exploded_words = s.str.split(expand=False).explode() # expand=False keeps lists in each row
   gear_type = pd.DataFrame(exploded_words.value_counts()).reset_index()
+
   fig_gear = alt.Chart(gear_type).mark_bar().encode(
    x=alt.X('gear_type', title='Type of Gear', sort=None),
    y=alt.Y('count', title='Number of Records')
@@ -230,16 +235,34 @@ if not filtered_df.empty:
 
   st.altair_chart(fig_gear, use_container_width=True)
 
-    # --- Display Filtered Data Table ---
+  # Effort by Vessel
 
-#    st.markdown("---")
-#    st.header("Filtered Data Records")
-#    st.dataframe(filtered_df, use_container_width=True) # Display the filtered dataframe
+  st.subheader("Effort by Type of Vessel")
+ 
+  mean_ppl_day = filtered_df.groupby(['today','landing_site','boat_type'])['people'].mean()
+  effort = filtered_df.groupby(['today','landing_site','boat_type'])['people'].sum() + mean_ppl_day * filtered_df.groupby(['today','landing_site','boat_type'])['boats_landed'].median()
+  #effort_df = pd.DataFrame(effort.reset_index(), columns=['today','landing_site','boat_type','effort']) 
+  effort_df = pd.DataFrame(effort.reset_index())
+  effort_df['effort'] = pd.DataFrame(effort).values
+  effort_df.drop(0,axis=1)
+
+  effort_df = effort_df[['landing_site','boat_type','effort']].groupby(['landing_site','boat_type']).sum().reset_index()
+  print(effort_df)
+ 
+#  site_catch_df = filtered_df.groupby(['group_catch','landing_site'])['_uuid'].count().reset_index().sort_values(by='_uuid', ascending=False)
+
+  fig_group = alt.Chart(effort_df).mark_bar().encode(
+   x = alt.X('landing_site', title='Landing Site'),
+   y = alt.Y('effort', title='Number of landings'),
+   color='boat_type'
+  )
+
+  st.altair_chart(fig_group, use_container_width=True)
 
 
- st.header("Catch and Yield Analysis")
+# st.header("Catch and Yield Analysis")
+# col_viz1, col_viz2 = st.columns(2)
 
- col_viz1, col_viz2 = st.columns(2)
 
  #with col_viz1:
 
