@@ -14,16 +14,18 @@ st.set_page_config(
     layout="wide" # Use wide layout for more space for charts
 )
 
-landing_sites = ['moa','ndumbani','mkokotoni','fumba','kizimkazi','msuka','wesha','mkoani']
+#def page_2():
+#    st.title("Sharks and Rays Data")
+
+#pg = st.navigation(["SHARC_streamlit_app.py", page_2])
+#pg.run()
+
+
+catch = pd.read_parquet('CATCH_kobo_data.parquet')
+
+#landing_sites = ['moa','ndumbani','mkokotoni','fumba','kizimkazi','msuka','wesha','mkoani']
 landing_sites = ['msuka','kojani','mvumoni_furaha','mtangani','sahare','tongoni','kigombe']
-
-
-with open('CATCH_kobo_data.pkl', 'rb') as f:
-    df = pickle.load(f)
-
 df = df[df['landing_site'].isin(landing_sites)]
-
-#print(loaded_data)
 
 # --- Sidebar Filters ---
 st.sidebar.header("Filters ⚙️")
@@ -40,7 +42,7 @@ if df.empty:
 
 df['today'] = df['today'].dt.date
 
-min_date = df['today'].min()
+min_date = date(2022,1,1)
 max_date = df['today'].max()
 
 date_range = st.sidebar.date_input(
@@ -78,7 +80,7 @@ selected_groups = st.sidebar.multiselect(
 
 # --- Apply Filters ---
 filtered_df = df[
-    (df['today'] >= date(2022,1,1)) &
+    (df['today'] >= start_date) &
     (df['today'] <= end_date) &
     (df['landing_site'].isin(selected_sites)) &
     (df['group_catch'].isin(selected_groups))
@@ -93,19 +95,21 @@ with col1:
      <style>
      .custom-font {
          font-family: 'Futura', serif;
-         font-size: 60px !important;
+         font-size: 50px !important;
          font-weight: bold;
      }
      </style>
-     <p class="custom-font">Artisanal Fishing Landings</p>
+     <p class="custom-font">Artisanal Fishing Catch Landings</p>
      """, unsafe_allow_html=True)
 #    st.write('Artisanal Landings Data Visualization')
 
+#print(st.get_option("theme.style"))
+
 with col2:
- if st.context.theme.type == 'dark':
-  st.image('./img/WCS-logo_white.png', width=300)
- else:
-  st.image('./img/WCS-logo.png', width=300)
+# if st.context.theme == 'dark':
+ #st.image('./img/WCS-logo_white.png', width=300)
+# else:
+ st.image('./img/WCS-logo.png', width=300)
 
 #st.title("🎣 Fishery Catch Data Visualization")
 st.markdown(f"Visualizing data from **{start_date.strftime('%Y-%m-%d')}** to **{end_date.strftime('%Y-%m-%d')}** for sites: **{', '.join(selected_sites) if selected_sites else 'None'}**.")
@@ -137,10 +141,19 @@ else:
 # --- Visualizations ---
 
 if not filtered_df.empty:
+
  st.header("Landing Records")
 
+ coords = pd.merge(filtered_df[['landing_site','_gps_latitude']].groupby('landing_site').median(), filtered_df[['landing_site','_gps_longitude']].groupby('landing_site').median(), right_index=True, left_index=True)
+ coords = pd.merge(coords, filtered_df[['landing_site','_gps_latitude']].groupby('landing_site').count(), right_index=True, left_index=True)
+ coords = coords.rename(columns = {'_gps_latitude_x' : 'lat', '_gps_longitude' : 'lon', '_gps_latitude_y' : 'count'})
+ 
+ st.map(coords.dropna(), size='count')
+
  # 1. Catch Weight Over Time (Line Chart)
- st.subheader('Sampling Effort')
+ con0 = st.container(border=True)
+
+ con0.subheader('Sampling Effort')
  effort_time = filtered_df.groupby(['today','landing_site'])['_uuid'].count().reset_index()
  fig_effort = alt.Chart(effort_time).mark_bar().encode(
   x=alt.X('today', title='Date'),
@@ -148,33 +161,35 @@ if not filtered_df.empty:
   color='landing_site'
   )
  
- st.altair_chart(fig_effort, use_container_width=True)
+ con0.altair_chart(fig_effort, use_container_width=True)
 
 
- #st.plotly_chart(fig_time, use_container_width=True)
+
 
  # Split into two columns for side-by-side charts
  col_viz1, col_viz2 = st.columns(2)
 
  with col_viz1:
 
+  con1 = col_viz1.container(border=True)
+
   # Landings by Boat Type
-  st.subheader("Landings by type of boat")
+  con1.subheader("Landings by type of boat")
   boat_type = filtered_df.groupby('boat_type').count().sort_values(by='_uuid').reset_index()
 
   fig_boat = alt.Chart(boat_type).mark_bar().encode(
    x=alt.X('boat_type', title='Type of Fishing Vessel', sort=None),
    y=alt.Y('_uuid', title='Number of Records')
    )
-  st.altair_chart(fig_boat, use_container_width=True)
+  con1.altair_chart(fig_boat, use_container_width=True)
 
 
+  con2 = col_viz1.container(border=True)
   # Landings by Species Group
 
-  st.subheader("Landings by Species Group")
+  con2.subheader("Landings by Species Group")
   site_catch_df = filtered_df.groupby(['group_catch','landing_site'])['_uuid'].count().reset_index().sort_values(by='_uuid', ascending=False)
 
-  #print(site_catch_df)
 
   fig_group = alt.Chart(site_catch_df).mark_bar().encode(
     x = alt.X('landing_site', title='Landing Site'),
@@ -182,7 +197,7 @@ if not filtered_df.empty:
     color='group_catch'
   )
 
-  st.altair_chart(fig_group, use_container_width=True)
+  con2.altair_chart(fig_group, use_container_width=True)
 
 
 
@@ -190,7 +205,9 @@ if not filtered_df.empty:
 
   # Landings by Gear Type
 
-  st.subheader("Landings by Gear Type")
+  con3 = col_viz2.container(border=True)
+
+  con3.subheader("Landings by Gear Type")
 
   s = pd.Series(filtered_df['gear_type'].dropna()).astype(str)
   exploded_words = s.str.split(expand=False).explode() # expand=False keeps lists in each row
@@ -201,11 +218,13 @@ if not filtered_df.empty:
    y=alt.Y('count', title='Number of Records')
    )
 
-  st.altair_chart(fig_gear, use_container_width=True)
+  con3.altair_chart(fig_gear, use_container_width=True)
 
   # Effort by Vessel
 
-  st.subheader("Effort by Type of Vessel")
+  con4 = col_viz2.container(border=True)
+
+  con4.subheader("Effort by Type of Vessel")
  
   mean_ppl_day = filtered_df.groupby(['today','landing_site','boat_type'])['people'].mean()
   effort = filtered_df.groupby(['today','landing_site','boat_type'])['people'].sum() + mean_ppl_day * filtered_df.groupby(['today','landing_site','boat_type'])['boats_landed'].median()
@@ -215,7 +234,6 @@ if not filtered_df.empty:
   effort_df.drop(0,axis=1)
 
   effort_df = effort_df[['landing_site','boat_type','effort']].groupby(['landing_site','boat_type']).sum().reset_index()
-  print(effort_df)
  
 #  site_catch_df = filtered_df.groupby(['group_catch','landing_site'])['_uuid'].count().reset_index().sort_values(by='_uuid', ascending=False)
 
@@ -225,13 +243,46 @@ if not filtered_df.empty:
    color='boat_type'
   )
 
-  st.altair_chart(fig_group, use_container_width=True)
+  con4.altair_chart(fig_group, use_container_width=True)
 
 
-# st.header("Catch and Yield Analysis")
-# col_viz1, col_viz2 = st.columns(2)
+ st.header("Catch and Yield Analysis")
 
+   # Landings by Gear Type
 
+ st.subheader("Catch Per Unit Effort")
+
+ filtered_df['CPUE'] = filtered_df['weight_catch']/filtered_df['people']/filtered_df['Fishing_Trip/fishing_duration']
+ 
+ CPUE = pd.DataFrame(filtered_df)
+ CPUE.replace([np.inf, -np.inf], np.nan, inplace=True)
+ #CPUE.index = pd.to_datetime(CPUE['today'])
+
+ #CPUE_M = pd.DataFrame(CPUE.groupby('landing_site').resample('M')['CPUE'].mean())
+ CPUE = CPUE.groupby(['today','landing_site'])['CPUE'].mean().reset_index()
+ CPUE = CPUE.dropna()
+
+# filtered_df.dropna(inplace=True)
+
+ #print(np.nanmax(filtered_df['CPUE']))
+ #print(filtered_df)
+ #print(np.max(CPUE['CPUE']))
+
+ fig_CPUE_scatter = alt.Chart(CPUE).mark_circle().encode(
+  x=alt.X('today', title='Date'),
+  y=alt.Y('CPUE', title='CPUE [kg/fisher/day]'),
+  color='landing_site'
+ )
+
+ # Create trendline layer using linear regression
+ fig_CPUE_scatter = fig_CPUE_scatter + fig_CPUE_scatter.transform_regression('today', 'CPUE', method='linear', groupby=['landing_site']).mark_line(size=4)  #transform_loess #alt.Chart(CPUE).mark_line(color='red').transform_regression('today', 'CPUE', method='linear')
+
+ # Combine layers
+ fig_chart_CPUE = fig_CPUE_scatter #+ fig_CPUE_trendline
+
+ st.altair_chart(fig_chart_CPUE, use_container_width=True)
+
+ #col_viz1, col_viz2 = st.columns(2)
  #with col_viz1:
 
 else:
