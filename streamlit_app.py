@@ -5,7 +5,6 @@ import altair as alt
 import streamlit as st
 import plotly.express as px
 from datetime import date, datetime, timedelta
-import pickle
 
 # --- Page Configuration ---
 st.set_page_config(
@@ -21,7 +20,7 @@ st.set_page_config(
 #pg.run()
 
 
-catch = pd.read_parquet('CATCH_kobo_data.parquet')
+df = pd.read_parquet('CATCH_kobo_data.parquet')
 
 #landing_sites = ['moa','ndumbani','mkokotoni','fumba','kizimkazi','msuka','wesha','mkoani']
 landing_sites = ['msuka','kojani','mvumoni_furaha','mtangani','sahare','tongoni','kigombe']
