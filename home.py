@@ -1,6 +1,12 @@
 import streamlit as st
 
 
+st.set_page_config(
+    page_title="Landings Data Visualization Platform",
+    page_icon="🎣",
+    layout="wide" # Use wide layout for more space for charts
+)
+
 st.markdown("""
 <style>
 [data-testid="stSidebarNavItems"] ul {
@@ -14,5 +20,4 @@ bony_page= st.Page("bony_fishes.py", title="Bony Fishes", icon="🐠")
 shark_page = st.Page("sharks_and_rays.py", title="Sharks and Rays", icon="🦈")
 
 pg = st.navigation([bony_page, shark_page], position="sidebar", expanded=True)
-st.set_page_config(page_title="Data manager", page_icon=":material/edit:")
 pg.run()

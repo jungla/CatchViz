@@ -4,17 +4,14 @@ import io
 #import pickle
 #import blosc2
 
+import urllib
 import gc
+import numpy as np
 
-
-#'https://kf.kobotoolbox.org/api/v2/assets/a7bZivgzH5Y6kxP2nhG98w/export-settings/esjTWoCt9kxhddoXpbEbbMT/data.xlsx', # catch
-#'https://kf.kobotoolbox.org/api/v2/assets/aaknL3DQQgkgZ8iay89X5P/export-settings/esMLtZ3eoopRhBPVBrG5EU6/data.xlsx' # SHARC
 
 filenames = ['CATCH_kobo_data.xlsx', 'SHARKS_kobo_data.xlsx']
-
-# get latest version of files
-
-# Replace with your actual credentials
+filenames = ['SHARKS_kobo_data.xlsx']
+#filenames = ['CATCH_kobo_data.xlsx']
 
 API_TOKEN = "d2001d49f190d5cd625776dc1b08d13093cf8607" 
 
@@ -22,7 +19,7 @@ headers = {
     "Authorization": f"Token {API_TOKEN}"
 }
 
-def load_data_from_excel_file(filename): # Explicitly load 'catch_catch' sheet
+def load_data_from_kobo(filename): # Explicitly load 'catch_catch' sheet
 
  # catch
 
@@ -31,17 +28,22 @@ def load_data_from_excel_file(filename): # Explicitly load 'catch_catch' sheet
 
   try:
     response = requests.get(api_url, headers=headers)
-    response.raise_for_status()  # Raise an exception for HTTP errors (4xx or 5xx)
-    excel_file = io.BytesIO(response.content)
-    catch = pd.read_excel(excel_file, engine='openpyxl', sheet_name=1)
-    trips = pd.read_excel(excel_file, engine='openpyxl', sheet_name=0)
+    with open('CATCH_kobo_data_latest.xlsx', "wb") as f:
+     f.write(response.content)
+
+    #response = requests.get(api_url, headers=headers)
+    #response.raise_for_status()  # Raise an exception for HTTP errors (4xx or 5xx)
+    #excel_file = io.BytesIO(response.content)
+    #catch = pd.read_excel(excel_file, engine='openpyxl', sheet_name=1)
+    #trips = pd.read_excel(excel_file, engine='openpyxl', sheet_name=0)
 
   except requests.exceptions.RequestException as e:
     print(f"Error fetching data: {e}")
 
-  #catch = pd.read_excel(filename, engine = 'openpyxl', sheet_name=1)
-  #trips = pd.read_excel(filename, engine = 'openpyxl', sheet_name=0)
-  catch = trips.merge(catch, left_on = '_uuid', right_on='_submission__uuid')
+  trips = pd.read_excel('CATCH_kobo_data_latest.xlsx', sheet_name=0, engine='openpyxl')
+  catch = pd.read_excel('CATCH_kobo_data_latest.xlsx', sheet_name=1, engine='openpyxl')
+
+  catch = trips.merge(catch, left_on = '_uuid', right_on='_submission__uuid', how='left')
 
   del trips, excel_file, response
  
@@ -65,49 +67,63 @@ def load_data_from_excel_file(filename): # Explicitly load 'catch_catch' sheet
   catch['weight_catch'] = catch['Total_Catch_Survey/catch_catch/weight_catch']
   catch['group_catch'] = catch['Total_Catch_Survey/catch_catch/group_catch']
 
+  ids = [2,4,5,7,8,10,12,13,14,15,16,17,18,19,20,21,22,210,211,212,213,214,215,217,288,289,338,339,340,341,342,343,378,379,380,381]
+  catch = catch.iloc[:, ids]
+
  # sharks
 
  elif filename == 'SHARKS_kobo_data.xlsx':
   api_url = f'https://kf.kobotoolbox.org/api/v2/assets/aaknL3DQQgkgZ8iay89X5P/export-settings/esMLtZ3eoopRhBPVBrG5EU6/data.xlsx'
   
   try:
+    # simpler approach donwloading the file
     response = requests.get(api_url, headers=headers)
-    response.raise_for_status()  # Raise an exception for HTTP errors (4xx or 5xx)
-    excel_file = io.BytesIO(response.content)
-    #catch = pd.read_excel(response.content, engine='openpyxl', sheet_name='SHARC')
-    #trips = pd.read_excel(response.content, engine='openpyxl', sheet_name=0)
+    with open('SHARKS_kobo_data_latest.xlsx', "wb") as f:
+     f.write(response.content)
 
-    trip = pd.read_excel(excel_file, na_values='NaN', keep_default_na=False, sheet_name='SHARC', engine='openpyxl')
-    catch = pd.read_excel(excel_file, na_values='NaN', keep_default_na=False, sheet_name='catch_details', engine='openpyxl')
+    #response = requests.get(api_url, headers=headers)
+    #response.raise_for_status()  # Raise an exception for HTTP errors (4xx or 5xx)
+    #excel_file = io.BytesIO(response.content)
+
 
   except requests.exceptions.RequestException as e:
     print(f"Error fetching data: {e}")
 
-  region = pd.DataFrame({'Survey site' : ['Bububu/Malindi', 'Malindi', 'Chole', 'Kukuu', 'Mazizini', 'Mkoani', 'Msuka', 'Mtwara', 'Rufiji', 'Somanga', 'Wete','Kilwa', 'Shanghani','Nungwi','Moa','Kizimkazi dimbani','Mkokotoni','Mafia','Tanga','Sumbauranga','bwawani'], 'Region' : ['Unguja','Unguja','Pemba','Pemba','Unguja','Pemba','Pemba','Mainland','Mainland','Mainland','Pemba','Mainland','Unguja','Unguja','Mainland','Unguja','Unguja','Mainland','Mainland','Mainland','Unguja']})
+  #trip = trip.drop(['start', 'end'], axis=1)
+  trip = pd.read_excel('SHARKS_kobo_data_latest.xlsx', sheet_name='SHARC', engine='openpyxl')
+  catch = pd.read_excel('SHARKS_kobo_data_latest.xlsx', sheet_name='catch_details', engine='openpyxl')
   
-  trip = trip.drop(['start', 'end'], axis=1)
-  
-  catch = pd.merge(trip, catch, left_on='_index', right_on='_parent_index')
-  catch = pd.merge(catch, region, left_on='Landing site', right_on='Survey site')
+  catch = trip.merge(catch, left_on='_uuid', right_on='_submission__uuid', how='left')
 
-  del trip, excel_file, response
+  catch['Landing site'] = catch['Landing site'].str.lower()
+  catch = catch.rename(columns={'Landing site': 'landing_site'})
+
+  #del trip, excel_file, response
   
   catch['Scientific_name'] = catch['Species']
+  catch.loc[catch['Type of catch'] == 'Shark-like ray','Type of catch'] = 'Shark-like Ray'
+
   catch.loc[catch['Data collector\'s name'] == 'old data from Collect', 'Scientific_name'] = catch[catch['Data collector\'s name'] == 'old data from Collect']['Genus']+' '+catch[catch['Data collector\'s name'] == 'old data from Collect']['Species']
   
   catch['Scientific_name'] = catch['Scientific_name'].str.replace('  ',' ')
   catch['Scientific_name'] = catch['Scientific_name'].str.capitalize()
-  
-  catch['today'] = pd.to_datetime(catch['today'],format='mixed')
-  catch['Index'] = pd.to_datetime(catch['today'],format='mixed')
-  catch = catch.set_index('Index')
+
+  catch.loc[catch['_GPS_longitude'] == '',:] = np.nan  
+  catch.loc[catch['_GPS_latitude'] == '',:] = np.nan  
+  catch['_GPS_latitude'] = catch['_GPS_latitude'].astype('float')
+  catch['_GPS_longitude'] = catch['_GPS_longitude'].astype('float')
+
+  #catch['today'] = pd.to_datetime(catch['today'],format='mixed')
+  #catch['Index'] = pd.to_datetime(catch['today'],format='mixed')
+  #catch = catch.set_index('Index')
+
+  # drop useless fields
+  ids = [0,1,2,4,5,7,8,10,12,13,14,15,16,18,19,20,21,22,23,24,25,26,27,28,29,30,31,32,57,58,59,60,61,62,63,64,65,66,67,114,115,116,117,118,119,120,121,122,123,124,125,126,127,128,129,130,131,132,133,134,135,136,137,138,139,140,141,142,143,144,146,162,48]
+  catch = catch.iloc[:,ids]
 
  return catch
 
-for i in range(2):
- data = load_data_from_excel_file(filename=filenames[i])
- data.to_parquet(filenames[i][:-5]+'.parquet', compression='snappy')
- del data
- gc.collect()
-
-
+for i in range(len(filenames)):
+ print(filenames[i])
+ data = load_data_from_kobo(filename=filenames[i])
+ data.to_csv(filenames[i][:-5]+'.csv')

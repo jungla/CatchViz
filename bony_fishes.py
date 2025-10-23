@@ -6,19 +6,15 @@ import streamlit as st
 import plotly.express as px
 from datetime import date, datetime, timedelta
 
-# --- Page Configuration ---
-st.set_page_config(
-    page_title="Artisanal Landings Data Visualization",
-    page_icon="🎣",
-    layout="wide" # Use wide layout for more space for charts
-)
-
 @st.cache_data
 def read_data(filename):
- df = pd.read_parquet(filename)
+ #df = pd.read_parquet(filename)
+ df = pd.read_csv(filename, low_memory=False) # parquet loses some data
  return df
 
-df = read_data('CATCH_kobo_data.parquet')
+#df = read_data('CATCH_kobo_data.parquet')
+df = read_data('CATCH_kobo_data.csv') # parquet loses some data
+
 
 #landing_sites = ['moa','ndumbani','mkokotoni','fumba','kizimkazi','msuka','wesha','mkoani']
 landing_sites = ['msuka','kojani','mvumoni_furaha','mtangani','sahare','tongoni','kigombe']
@@ -42,6 +38,8 @@ if df.empty:
     st.stop() # Stop further execution if no data
 
 # date filter
+
+df['today'] = pd.to_datetime(df['today'],format='mixed')
 
 df['today'] = df['today'].dt.date
 
@@ -96,17 +94,25 @@ col1, mid, col2 = st.columns([20,1,5])
 with col1:
  st.markdown("""
      <style>
-     .custom-font {
+     .h1-custom {
          font-family: 'Futura', serif;
-         font-size: 50px !important;
+         font-size: 30px !important;
          font-weight: bold;
      }
      </style>
-     <p class="custom-font">Artisanal Fishing Catch Landings</p>
-     """, unsafe_allow_html=True)
-#    st.write('Artisanal Landings Data Visualization')
 
-#print(st.get_option("theme.style"))
+     <style>
+     .h2-custom {
+         font-family: 'Futura', serif;
+         font-size: 50px !important;
+         font-color: silver;
+         font-weight: bold;
+     }
+     </style>
+
+     <h1 class="h1-custom">Kobotoolbox Data Visualization Platform</h1>
+     <h2 class="h2-custom">Landings of Bony Fishes</h2>
+     """, unsafe_allow_html=True)
 
 with col2:
 # if st.context.theme == 'dark':

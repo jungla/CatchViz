@@ -6,31 +6,119 @@ import streamlit as st
 import plotly.express as px
 from datetime import date, datetime, timedelta
 
-# --- Page Configuration ---
-st.set_page_config(
-    page_title="Shark and Ray Landings Data Visualization",
-    page_icon="🎣",
-    layout="wide" # Use wide layout for more space for charts
-)
+IUCN_columns = [
+    'Shark_or_Ray', 
+    'Scientific_name', 
+    'Male_size_at_maturity_cm_DW_TL', 
+    'Female_size_at_maturity_cm_DW_TL', 
+    'Red_List_Status', 
+    'IUCN_color'
+]
 
-#def page_2():
-#    st.title("Sharks and Rays Data")
+IUCN_values = [
+    ['Ray', 'Acroteriobatus zanzibarensis', np.nan, np.nan, 'NT', 'seagreen'],
+    ['Ray', 'Aetobatus ocellatus', 100, 150, 'VU', 'lime'],
+    ['Ray', 'Aetomylaeus vespertilio', 170, np.nan, 'EN', 'darkorange'],
+    ['Shark', 'Alopias pelagicus', 250, 250, 'EN', 'darkorange'],
+    ['Shark', 'Alopias superciliosus', 245, 280, 'VU', 'lime'],
+    ['Ray', 'Bathytoshia lata', 100, 110, 'LC', 'blue'],
+    ['Shark', 'Carcharhinus albimarginatus', 160, 160, 'VU', 'lime'],
+    ['Shark', 'Carcharhinus altimus', 215, 225, 'NT', 'seagreen'],
+    ['Shark', 'Carcharhinus amblyrhynchos', 110, 120, 'EN', 'darkorange'],
+    ['Shark', 'Carcharhinus brevipinna', np.nan, np.nan, 'VU', 'lime'],
+    ['Shark', 'Carcharhinus falciformis', 180, 180, 'VU', 'lime'],
+    ['Shark', 'Carcharhinus humani', 75, np.nan, 'DD', 'grey'],
+    ['Shark', 'Carcharhinus leucas', 160, 180, 'NT', 'seagreen'],
+    ['Shark', 'Carcharhinus limbatus', np.nan, np.nan, 0, np.nan],
+    ['Shark', 'Carcharhinus longimanus', 170, 175, 'CR', 'red'],
+    ['Shark', 'Carcharhinus melanopterus', 90, 95, 'VU', 'lime'],
+    ['Shark', 'Carcharhinus obscurus', 215, 220, 'EN', 'darkorange'],
+    ['Shark', 'Carcharhinus plumbeus', np.nan, np.nan, 0, np.nan],
+    ['Shark', 'Carcharhinus sealei', np.nan, np.nan, 0, np.nan],
+    ['Shark', 'Carcharhinus sorrah', 90, 95, 'NT', 'seagreen'],
+    ['Shark', 'Carcharhinus spp', np.nan, np.nan, 'NE', 'grey'],
+    ['Shark', 'Carcharodon carcharias', 310, 400, 'VU', 'lime'],
+    ['Shark', 'Centrophorus spp', np.nan, np.nan, 'NE', 'grey'],
+    ['Shark', 'Cirrhigaleus asper', 90, 85, 'DD', 'grey'],
+    ['Ray', 'Dasyatidae', np.nan, np.nan, 'NE', 'grey'],
+    ['Shark', 'Echinorhinus brucus', np.nan, np.nan, 0, np.nan],
+    ['Shark', 'Galeocerdo cuvier', 250, 275, 'NT', 'seagreen'],
+    ['Shark', 'Hemipristis elongata', 110, 120, 'VU', 'lime'],
+    ['Shark', 'Heptranchias perlo', 75, 90, 'NT', 'seagreen'],
+    ['Shark', 'Heterodontus ramalheira', np.nan, np.nan, 'DD', 'grey'],
+    ['Shark', 'Hexanchus griseus', 125, 400, 'NT', 'seagreen'],
+    ['Shark', 'Hexanchus nakamurai', 140, 125, 'NT', 'seagreen'],
+    ['Ray', 'Himantura leoparda', 70, np.nan, 'VU', 'lime'],
+    ['Ray', 'Himantura uarnak', 80, np.nan, 'VU', 'lime'],
+    ['Shark', 'Hypogaleus hyugaensis', 100, 100, 'LC', 'blue'],
+    ['Shark', 'Isurus oxyrinchus', 165, 265, 'EN', 'darkorange'],
+    ['Shark', 'Isurus paucus', 165, 265, 'EN', 'darkorange'],
+    ['Shark', 'Loxodon macrorhinus', 60, 80, 'LC', 'blue'],
+    ['Ray', 'Maculabatis ambigua', 60, 60, 'NT', 'seagreen'],
+    ['Ray', 'Megatrygon microps', np.nan, np.nan, 'DD', 'grey'],
+    ['Ray', 'Mobula eregoodoo', 100, 90, 'EN', 'darkorange'],
+    ['Ray', 'Mobula kuhlii', 115, 115, 'EN', 'darkorange'],
+    ['Ray', 'Mobula mobular', 200, 235, 'EN', 'darkorange'],
+    ['Ray', 'Mobula tarapacana', 235, 270, 'EN', 'darkorange'],
+    ['Ray', 'Mobula thurstoni', 150, 150, 'EN', 'darkorange'],
+    ['Shark', 'Mustelus manazo', 55, 60, 'EN', 'darkorange'],
+    ['Shark', 'Mustelus mosis', 65, 75, 'NT', 'seagreen'],
+    ['Ray', 'Neotrygon caeruleopunctata', 30, np.nan, 'NE', 'grey'],
+    ['Shark', 'Odontaspis ferox', 200, 300, 'VU', 'lime'],
+    ['Ray', 'Pastinachus ater', np.nan, np.nan, 'LC', 'blue'],
+    ['Ray', 'Pateobatis fai', 110, np.nan, 'VU', 'lime'],
+    ['Ray', 'Pateobatis jenkinsii', 75, np.nan, 'VU', 'lime'],
+    ['Shark', 'Prionace glauca', 185, 185, 'NT', 'seagreen'],
+    ['Shark', 'Pseudoginglymostoma brevicaudatum', 60, 55, 'CR', 'red'],
+    ['Ray', 'Rhina ancylostoma', np.nan, np.nan, 0, np.nan],
+    ['Ray', 'Rhina ancylostomus', 150, 180, 'CR', 'red'],
+    ['Ray', 'Rhinobatos austini', np.nan, np.nan, 'DD', 'grey'],
+    ['Ray', 'Rhinoptera jayakari', 80, np.nan, 'NE', 'grey'],
+    ['Shark', 'Rhizoprionodon acutus', 55, 60, 'VU', 'lime'],
+    ['Ray', 'Rhynchobatus australiae', 125, 155, 'CR', 'red'],
+    ['Shark', 'Sphyrna lewini', 140, 210, 'CR', 'red'],
+    ['Shark', 'Sphyrna mokarran', 225, 210, 'CR', 'red'],
+    ['Shark', 'Sphyrna spp', np.nan, np.nan, 0, np.nan],
+    ['Shark', 'Sphyrna zygaena', 250, 265, 'VU', 'lime'],
+    ['Shark', 'Squalus mitsukurii', np.nan, np.nan, 0, np.nan],
+    ['Shark', 'Squalus spp', 90, 85, 'NE', 'grey'],
+    ['Shark', 'Stegostoma tigrinum', 150, 170, 'EN', 'darkorange'],
+    ['Ray', 'Taeniura lymma', 20, np.nan, 'NT', 'seagreen'],
+    ['Ray', 'Taeniurops meyeni', 100, np.nan, 'VU', 'lime'],
+    ['Ray', 'Torpedo fuscomaculata', np.nan, np.nan, 'DD', 'grey'],
+    ['Shark', 'Triaenodon obesus', 105, 105, 'VU', 'lime'],
+    ['Ray', 'Urogymnus asperrimus', 90, 100, 'VU', 'lime']
+]
 
-#pg = st.navigation(["SHARC_streamlit_app.py", page_2])
-#pg.run()
+df_IUCN = pd.DataFrame(IUCN_values, columns=IUCN_columns)
 
-@st.cache_data
+#@st.cache_data
 def read_data(filename):
- df = pd.read_parquet(filename)
+ #df = pd.read_parquet(filename)
+ df = pd.read_csv(filename, low_memory=False) # parquet loses some data
  return df
 
-df = read_data('SHARKS_kobo_data.parquet')
 
-#landing_sites = ['moa','ndumbani','mkokotoni','fumba','kizimkazi','msuka','wesha','mkoani']
-landing_sites = ['msuka','kojani','mvumoni_furaha','mtangani','sahare','tongoni','kigombe']
-df = df[df['landing_site'].isin(landing_sites)]
+#df = read_data('SHARKS_kobo_data.csv') # parquet loses some data
+
+df = pd.read_csv('SHARKS_kobo_data.csv', low_memory=False) # parquet loses some data
+df = pd.merge(df, df_IUCN, left_on='Scientific_name', right_on = 'Scientific_name', how='left')
+
+df['today'] = pd.to_datetime(df['today'],format='mixed')
+
+#df['Index'] = pd.to_datetime(df['today'],format='mixed')
+
+# merge with data in field Date coming from import of old data
+#df.loc[df['Date'] != '', 'today'] = df['Date']
+#df = df.drop('Date', axis=1)
+
+df['date'] = pd.to_datetime(df['today'],format='mixed').dt.date
+df['month'] = df['today'].dt.month
+df['year'] = df['today'].dt.year
+df = df.set_index('today')
 
 # --- Sidebar Filters ---
+
 st.sidebar.header("Filters ⚙️")
 
 # Check if DataFrame is empty before attempting to filter
@@ -41,12 +129,8 @@ if df.empty:
     st.dataframe(pd.DataFrame(), use_container_width=True) # Display an empty DataFrame
     st.stop() # Stop further execution if no data
 
-# date filter
-
-df['today'] = df['today'].dt.date
-
-min_date = date(2022,1,1)
-max_date = df['today'].max()
+min_date = df['date'].min() #date(2019,1,1)
+max_date = df['date'].max()
 
 date_range = st.sidebar.date_input(
     "Select today Range:",
@@ -61,11 +145,21 @@ end_date = max_date
 if len(date_range) == 2:
     start_date, end_date = date_range
 
+# market filter
+
+all_markets = sorted(df['Market'].dropna().unique())
+selected_markets = st.sidebar.multiselect(
+    "Select Market(s):",
+    options=all_markets,
+    default=all_markets,
+    key='market_filter'
+)
+
 # site filter
 
-all_sites = sorted(df['landing_site'].unique())
+all_sites = sorted(df['landing_site'].dropna().unique())
 selected_sites = st.sidebar.multiselect(
-    "Select Site(s):",
+    "Select Landing Site(s):",
     options=all_sites,
     default=all_sites,
     key='site_filter'
@@ -73,21 +167,49 @@ selected_sites = st.sidebar.multiselect(
 
 # type catch filter
 
-all_groups = sorted(df['group_catch'].dropna().unique())
+#if 'secondary_options' not in st.session_state:
+#    # Start with the options corresponding to the first category by default
+##    default_category = df_IUCN['Scientific_name'].to_list()
+#    st.session_state.secondary_options = df_IUCN['Scientific_name'].to_list()
+#    st.session_state.secondary_selection = [st.session_state.secondary_options[0]] 
+#
+#def update_species_menu():
+#    """Callback function executed when the primary menu changes."""
+#    # Read the new primary selection's key
+#    selected_category = st.session_state.primary_selection 
+#
+#    # Update the list of options for the secondary menu
+#    st.session_state.secondary_options = df_IUCN[df_IUCN['Shark_or_Ray'].isin(selected_category)]['Scientific_name'].to_list()
+#
+#    new_options = st.session_state.secondary_options
+#    st.session_state.secondary_selection = [new_options[:]] if new_options else []
+
+
+all_groups = ['Ray', 'Shark'] #sorted(df['Type of catch'].dropna().unique())
 selected_groups = st.sidebar.multiselect(
     "Select Group(s):",
     options=all_groups,
-    default=['reef_fish','tuna_like','small_pelagic'],
-    key='group_filter'
+    default=['Ray', 'Shark'],
+    key='selected_groups'
 )
 
+# species filter
+ 
+
+#top_species = df.groupby(['Scientific_name'])['_uuid'].count().sort_values()
+#top_species = top_species[top_species > np.percentile(top_species,80)].sort_index()
+#
+#selected_species = st.sidebar.multiselect(
+#    "Select Top Species(s):",
+#    options=st.session_state.secondary_options,
+#    default=st.session_state.secondary_options,
+#    key='secondary_selection',
+#)
+
 # --- Apply Filters ---
-filtered_df = df[
-    (df['today'] >= start_date) &
-    (df['today'] <= end_date) &
-    (df['landing_site'].isin(selected_sites)) &
-    (df['group_catch'].isin(selected_groups))
-]
+
+filtered_df = df[(df['date'] >= start_date) & (df['date'] <= end_date) & (df['landing_site'].isin(selected_sites) | df['Market'].isin(selected_markets)) & (df['Type of catch'].isin(selected_groups))]
+
 
 # --- Main Page Content ---
 
@@ -96,13 +218,23 @@ col1, mid, col2 = st.columns([20,1,5])
 with col1:
  st.markdown("""
      <style>
-     .custom-font {
+     .h1-custom {
          font-family: 'Futura', serif;
-         font-size: 50px !important;
+         font-size: 30px !important;
          font-weight: bold;
      }
      </style>
-     <p class="custom-font">Shark and Ray Landings</p>
+     <style>
+     .h2-custom {
+         font-family: 'Futura', serif;
+         font-size: 50px !important;
+         font-color: silver;
+         font-weight: bold;
+     }
+     </style>
+
+     <h1 class="h1-custom">Kobotoolbox Data Visualization Platform</h1>
+     <h2 class="h2-custom">Landings of Sharks and Rays</h2>
      """, unsafe_allow_html=True)
 
 #    st.write('Artisanal Landings Data Visualization')
@@ -115,32 +247,27 @@ with col2:
 # else:
  st.image('./img/WCS-logo.png', width=300)
 
-#st.title("🎣 Fishery Catch Data Visualization")
 st.markdown(f"Visualizing data from **{start_date.strftime('%Y-%m-%d')}** to **{end_date.strftime('%Y-%m-%d')}** for sites: **{', '.join(selected_sites) if selected_sites else 'None'}**.")
 st.markdown("---") # Separator
 
 
-# --- Display Metrics/KPIs ---
-
 # I would add a time series of sampling days for the landing sites
 
 if not filtered_df.empty:
-    total_catch = filtered_df['weight_catch'].sum()
-    num_records_filtered = len(filtered_df)
-    avg_catch_per_record = filtered_df['weight_catch'].mean()
+    total_records = len(filtered_df['Scientific_name'])
+    total_species = len(filtered_df['Scientific_name'].unique())
+    total_weight = filtered_df['Weight (kg)'].sum()
 
     col1, col2, col3 = st.columns(3)
     with col1:
-        st.metric(label="Total Catch (kg)", value=f"{total_catch:,.2f}")
+        st.metric(label="Number of Records", value=total_records)
     with col2:
-        st.metric(label="Number of Records", value=f"{num_records_filtered:,}")
+        st.metric(label="Number of Species Landed", value=total_species)
     with col3:
-        st.metric(label="Average Catch per Record (kg)", value=f"{avg_catch_per_record:,.2f}")
+        st.metric(label="Total Catch (kg)", value=f"{total_weight:,.2f}")
     st.markdown("---")
 else:
     st.warning("No data available for the selected filters.")
-
-
 
 # --- Visualizations ---
 
@@ -148,19 +275,19 @@ if not filtered_df.empty:
 
  st.header("Landing Records")
 
- coords = pd.merge(filtered_df[['landing_site','_gps_latitude']].groupby('landing_site').median(), filtered_df[['landing_site','_gps_longitude']].groupby('landing_site').median(), right_index=True, left_index=True)
- coords = pd.merge(coords, filtered_df[['landing_site','_gps_latitude']].groupby('landing_site').count(), right_index=True, left_index=True)
- coords = coords.rename(columns = {'_gps_latitude_x' : 'lat', '_gps_longitude' : 'lon', '_gps_latitude_y' : 'count'})
- 
+ coords = pd.merge(filtered_df[['landing_site','_GPS_latitude']].groupby('landing_site').median(), filtered_df[['landing_site','_GPS_longitude']].groupby('landing_site').median(), right_index=True, left_index=True)
+ coords = pd.merge(coords, filtered_df[['landing_site','_GPS_latitude']].groupby('landing_site').count(), right_index=True, left_index=True)
+ coords = coords.rename(columns = {'_GPS_latitude_x' : 'lat', '_GPS_longitude' : 'lon', '_GPS_latitude_y' : 'count'})
+ coords['count'] = coords['count']*10 
  st.map(coords.dropna(), size='count')
 
  # 1. Catch Weight Over Time (Line Chart)
  con0 = st.container(border=True)
 
  con0.subheader('Sampling Effort')
- effort_time = filtered_df.groupby(['today','landing_site'])['_uuid'].count().reset_index()
+ effort_time = filtered_df.groupby('landing_site')['_uuid'].resample('M').count().reset_index() 
  fig_effort = alt.Chart(effort_time).mark_bar().encode(
-  x=alt.X('today', title='Date'),
+  x=alt.X('yearmonth(today):O', title='Date'),
   y=alt.Y('_uuid', title='Number of Records', stack='zero'),
   color='landing_site'
   )
@@ -168,6 +295,8 @@ if not filtered_df.empty:
  con0.altair_chart(fig_effort, use_container_width=True)
 
 
+ st.header('Life History Traits and IUCN Categories')
+ df_IUCN
 
 
  # Split into two columns for side-by-side charts
@@ -177,33 +306,59 @@ if not filtered_df.empty:
 
   con1 = col_viz1.container(border=True)
 
-  # Landings by Boat Type
-  con1.subheader("Landings by type of boat")
-  boat_type = filtered_df.groupby('boat_type').count().sort_values(by='_uuid').reset_index()
+  # Landings by Species 
 
-  fig_boat = alt.Chart(boat_type).mark_bar().encode(
-   x=alt.X('boat_type', title='Type of Fishing Vessel', sort=None),
-   y=alt.Y('_uuid', title='Number of Records')
+  con1.subheader("Top Landings by Species")
+
+  landings_species = filtered_df.groupby(['Red_List_Status','IUCN_color','Scientific_name']).count().sort_values('_uuid')['_uuid'].reset_index() 
+  landings_species = landings_species[landings_species['_uuid'] > np.percentile(landings_species['_uuid'],50)].sort_values('_uuid')
+
+  IUCN_status = ['Critically Endangered', 'Endangered', 'Vulnerable', 'Near Threatened', 'Least Concern', 'Data Deficient']
+  IUCN_status = ['CR', 'EN', 'VU', 'NT', 'LC', 'DD', 'NE']
+  IUCN_hex_colors = ['#D40000', '#FF7C00', '#FFD800', '#00A859', '#0085C8', '#CCCCCC', '#CCCCCC'] # Red, Orange, Yellow, Green, Blue, Gray
+  
+  IUCN_color = pd.DataFrame({
+      'Red_List_Status': IUCN_status,
+      'Color': IUCN_hex_colors
+  })
+
+  color_scale = alt.Scale(
+   domain=IUCN_color['Red_List_Status'].tolist(),
+   range=IUCN_color['Color'].tolist()
    )
-  con1.altair_chart(fig_boat, use_container_width=True)
+
+  fig_species = alt.Chart(landings_species).mark_bar().encode(
+   x=alt.X('Scientific_name', title='Scientific Name', sort=None),
+   y=alt.Y('_uuid', title='Number of Records'),
+   color=alt.Color('Red_List_Status:N', scale=color_scale, legend=alt.Legend(title="IUCN Red List Status"))).properties().configure_axis(labelLimit=1000)
+
+  con1.altair_chart(fig_species, use_container_width=True)
 
 
   con2 = col_viz1.container(border=True)
-  # Landings by Species Group
 
-  con2.subheader("Landings by Species Group")
-  site_catch_df = filtered_df.groupby(['group_catch','landing_site'])['_uuid'].count().reset_index().sort_values(by='_uuid', ascending=False)
+  # Landings by IUCN Category
+
+  con2.subheader("Maturity Ratio")
+
+  #matrity_df = filtered_df.groupby(['group_catch','landing_site'])['_uuid'].count().reset_index().sort_values(by='_uuid', ascending=False)
+
+  filtered_df.loc[(filtered_df['Sex'] == 'Male') & (filtered_df['Shark_or_Ray'] == 'Ray'),'maturity'] = filtered_df.loc[(filtered_df['Sex'] == 'Male') & (filtered_df['Shark_or_Ray'] == 'Ray'), 'Disc width (cm)'].astype('float')/filtered_df.loc[(filtered_df['Sex'] == 'Male') & (filtered_df['Shark_or_Ray'] == 'Ray'), 'Male_size_at_maturity_cm_DW_TL'].astype('float')
+
+  filtered_df.loc[(filtered_df['Sex'] == 'Female') & (filtered_df['Shark_or_Ray'] == 'Ray'),'maturity'] = filtered_df.loc[(filtered_df['Sex'] == 'Female') & (filtered_df['Shark_or_Ray'] == 'Ray'), 'Disc width (cm)'].astype('float')/filtered_df.loc[(filtered_df['Sex'] == 'Female') & (filtered_df['Shark_or_Ray'] == 'Ray'), 'Female_size_at_maturity_cm_DW_TL'].astype('float')
+
+  filtered_df.loc[(filtered_df['Sex'] == 'Male') & (filtered_df['Shark_or_Ray'] == 'Shark'),'maturity'] = filtered_df.loc[(filtered_df['Sex'] == 'Male') & (filtered_df['Shark_or_Ray'] == 'Shark'), 'Total length (cm)'].astype('float')/filtered_df.loc[(filtered_df['Sex'] == 'Male') & (filtered_df['Shark_or_Ray'] == 'Shark'), 'Male_size_at_maturity_cm_DW_TL'].astype('float')
+
+  filtered_df.loc[(filtered_df['Sex'] == 'Female') & (filtered_df['Shark_or_Ray'] == 'Shark'),'maturity'] = filtered_df.loc[(filtered_df['Sex'] == 'Female') & (filtered_df['Shark_or_Ray'] == 'Shark'), 'Total length (cm)'].astype('float')/filtered_df.loc[(filtered_df['Sex'] == 'Female') & (filtered_df['Shark_or_Ray'] == 'Shark'), 'Female_size_at_maturity_cm_DW_TL'].astype('float')
 
 
-  fig_group = alt.Chart(site_catch_df).mark_bar().encode(
-    x = alt.X('landing_site', title='Landing Site'),
-    y = alt.Y('_uuid', title='Number of landings'),
-    color='group_catch'
+  fig_maturity = alt.Chart(filtered_df).mark_bar().encode(
+    x = alt.X('maturity:Q', title='Maturity Ratio', bin=alt.Bin(extent=[0,3], step=0.1)),
+    y = alt.Y('count():Q', title='Individuals')
+#    color='group_catch'
   )
 
-  con2.altair_chart(fig_group, use_container_width=True)
-
-
+  con2.altair_chart(fig_maturity, use_container_width=True)
 
  with col_viz2:
 
@@ -211,83 +366,36 @@ if not filtered_df.empty:
 
   con3 = col_viz2.container(border=True)
 
-  con3.subheader("Landings by Gear Type")
+  con3.subheader("IUCN Status of Landings")
 
-  s = pd.Series(filtered_df['gear_type'].dropna()).astype(str)
-  exploded_words = s.str.split(expand=False).explode() # expand=False keeps lists in each row
-  gear_type = pd.DataFrame(exploded_words.value_counts()).reset_index()
+  IUCN_status_df = filtered_df.groupby(['Red_List_Status'])['_uuid'].count().reset_index().sort_values(by='_uuid', ascending=False).drop(0)
 
-  fig_gear = alt.Chart(gear_type).mark_bar().encode(
-   x=alt.X('gear_type', title='Type of Gear', sort=None),
-   y=alt.Y('count', title='Number of Records')
-   )
+  fig_IUCN = alt.Chart(IUCN_status_df).mark_bar().encode(
+   x = alt.X('Red_List_Status', title='Red_List_Status', sort=None),
+   y = alt.Y('_uuid', title='Number of landings'), 
+   color=alt.Color( 'Red_List_Status:N', scale=color_scale, legend=alt.Legend(title="IUCN Red List Status"))).properties().configure_axis(labelLimit=1000) 
 
-  con3.altair_chart(fig_gear, use_container_width=True)
+  con3.altair_chart(fig_IUCN, use_container_width=True)
 
-  # Effort by Vessel
+  # Sex Ratio 
 
   con4 = col_viz2.container(border=True)
 
-  con4.subheader("Effort by Type of Vessel")
- 
-  mean_ppl_day = filtered_df.groupby(['today','landing_site','boat_type'])['people'].mean()
-  effort = filtered_df.groupby(['today','landing_site','boat_type'])['people'].sum() + mean_ppl_day * filtered_df.groupby(['today','landing_site','boat_type'])['boats_landed'].median()
-  #effort_df = pd.DataFrame(effort.reset_index(), columns=['today','landing_site','boat_type','effort']) 
-  effort_df = pd.DataFrame(effort.reset_index())
-  effort_df['effort'] = pd.DataFrame(effort).values
-  effort_df.drop(0,axis=1)
+  con4.subheader('Sex Ratio')
+  con4.markdown('The graph below shows the distribution of the ratios of the number of females and males landed for each species. Values larger than 1, indicate that more females are landed for the selected landings.')
 
-  effort_df = effort_df[['landing_site','boat_type','effort']].groupby(['landing_site','boat_type']).sum().reset_index()
+  sex_ratio_df = filtered_df[filtered_df['Sex'] == 'Female'].groupby('Scientific_name')['_uuid'].count()/filtered_df[filtered_df['Sex'] == 'Male'].groupby('Scientific_name')['_uuid'].count()
+  sex_ratio_df = sex_ratio_df.reset_index()
  
 #  site_catch_df = filtered_df.groupby(['group_catch','landing_site'])['_uuid'].count().reset_index().sort_values(by='_uuid', ascending=False)
 
-  fig_group = alt.Chart(effort_df).mark_bar().encode(
-   x = alt.X('landing_site', title='Landing Site'),
-   y = alt.Y('effort', title='Number of landings'),
-   color='boat_type'
+  fig_sex_ratio = alt.Chart(sex_ratio_df).mark_bar().encode(
+   x = alt.X('_uuid:Q', title='Sex Ratio (female/male)', bin=alt.Bin(extent=[0,3], step=0.1)),
+   y = alt.Y('count():Q', title='Individuals')
   )
 
-  con4.altair_chart(fig_group, use_container_width=True)
+  con4.altair_chart(fig_sex_ratio, use_container_width=True)
 
-
- st.header("Catch and Yield Analysis")
-
-   # Landings by Gear Type
-
- st.subheader("Catch Per Unit Effort")
-
- filtered_df['CPUE'] = filtered_df['weight_catch']/filtered_df['people']/filtered_df['Fishing_Trip/fishing_duration']
- 
- CPUE = pd.DataFrame(filtered_df)
- CPUE.replace([np.inf, -np.inf], np.nan, inplace=True)
- #CPUE.index = pd.to_datetime(CPUE['today'])
-
- #CPUE_M = pd.DataFrame(CPUE.groupby('landing_site').resample('M')['CPUE'].mean())
- CPUE = CPUE.groupby(['today','landing_site'])['CPUE'].mean().reset_index()
- CPUE = CPUE.dropna()
-
-# filtered_df.dropna(inplace=True)
-
- #print(np.nanmax(filtered_df['CPUE']))
- #print(filtered_df)
- #print(np.max(CPUE['CPUE']))
-
- fig_CPUE_scatter = alt.Chart(CPUE).mark_circle().encode(
-  x=alt.X('today', title='Date'),
-  y=alt.Y('CPUE', title='CPUE [kg/fisher/day]'),
-  color='landing_site'
- )
-
- # Create trendline layer using linear regression
- fig_CPUE_scatter = fig_CPUE_scatter + fig_CPUE_scatter.transform_regression('today', 'CPUE', method='linear', groupby=['landing_site']).mark_line(size=4)  #transform_loess #alt.Chart(CPUE).mark_line(color='red').transform_regression('today', 'CPUE', method='linear')
-
- # Combine layers
- fig_chart_CPUE = fig_CPUE_scatter #+ fig_CPUE_trendline
-
- st.altair_chart(fig_chart_CPUE, use_container_width=True)
-
- #col_viz1, col_viz2 = st.columns(2)
- #with col_viz1:
 
 else:
     # This block is executed if filtered_df is empty (e.g., no data, or filters result in empty set)
