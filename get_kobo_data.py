@@ -7,11 +7,10 @@ import io
 import urllib
 import gc
 import numpy as np
+import datetime
 
-
-filenames = ['CATCH_kobo_data.xlsx', 'SHARKS_kobo_data.xlsx']
-#filenames = ['SHARKS_kobo_data.xlsx']
-#filenames = ['CATCH_kobo_data.xlsx']
+datasets = ['CATCH', 'SHARK']
+#datasets = ['SHARK']
 
 API_TOKEN = "d2001d49f190d5cd625776dc1b08d13093cf8607" 
 
@@ -19,23 +18,44 @@ headers = {
     "Authorization": f"Token {API_TOKEN}"
 }
 
-def load_data_from_kobo(filename): # Explicitly load 'catch_catch' sheet
+ASSET_UID = {'SHARK':'aaknL3DQQgkgZ8iay89X5P', 'CATCH':'a7bZivgzH5Y6kxP2nhG98w'}
+BASE_URL = 'https://kf.kobotoolbox.org/api/v2/assets'
 
+def create_export_setting(ASSET):
+ headers = {'Authorization': f'Token {API_TOKEN}'}
+ 
+ payload = {
+     "name": str(datetime.datetime.now()),  # This was the first error
+     "source": f"{BASE_URL}/{ASSET}/",
+     "type": "xls",
+     "export_settings": {
+         "lang": "_xml",
+         "fields_from_all_versions": False,
+         "group_sep": "/",
+         "hierarchy_in_labels": False,
+         "multiple_select": "both",
+         "type": "xls"
+     }
+ }
+ 
+ response = requests.post(f"{BASE_URL}/{ASSET}/export-settings/", headers=headers, json=payload)
+ download_url = response.json().get('url')
+ return download_url
+
+
+
+def load_data_from_kobo(dataset, download_url): # Explicitly load 'catch_catch' sheet
+ api_url = download_url+'data.xlsx'
+
+ print(api_url)
  # catch
 
- if filename == 'CATCH_kobo_data.xlsx':
-  api_url = f'https://kf.kobotoolbox.org/api/v2/assets/a7bZivgzH5Y6kxP2nhG98w/export-settings/esjTWoCt9kxhddoXpbEbbMT/data.xlsx'
+ if dataset == 'CATCH':
 
   try:
     response = requests.get(api_url, headers=headers)
     with open('CATCH_kobo_data_latest.xlsx', "wb") as f:
      f.write(response.content)
-
-    #response = requests.get(api_url, headers=headers)
-    #response.raise_for_status()  # Raise an exception for HTTP errors (4xx or 5xx)
-    #excel_file = io.BytesIO(response.content)
-    #catch = pd.read_excel(excel_file, engine='openpyxl', sheet_name=1)
-    #trips = pd.read_excel(excel_file, engine='openpyxl', sheet_name=0)
 
   except requests.exceptions.RequestException as e:
     print(f"Error fetching data: {e}")
@@ -72,58 +92,54 @@ def load_data_from_kobo(filename): # Explicitly load 'catch_catch' sheet
 
  # sharks
 
- elif filename == 'SHARKS_kobo_data.xlsx':
-  api_url = f'https://kf.kobotoolbox.org/api/v2/assets/aaknL3DQQgkgZ8iay89X5P/export-settings/esMLtZ3eoopRhBPVBrG5EU6/data.xlsx'
+ elif dataset == 'SHARK':
   
   try:
     # simpler approach donwloading the file
     response = requests.get(api_url, headers=headers)
-    with open('SHARKS_kobo_data_latest.xlsx', "wb") as f:
+    with open('SHARK_kobo_data_latest.xlsx', "wb") as f:
      f.write(response.content)
-
-    #response = requests.get(api_url, headers=headers)
-    #response.raise_for_status()  # Raise an exception for HTTP errors (4xx or 5xx)
-    #excel_file = io.BytesIO(response.content)
-
 
   except requests.exceptions.RequestException as e:
     print(f"Error fetching data: {e}")
 
   #trip = trip.drop(['start', 'end'], axis=1)
-  trip = pd.read_excel('SHARKS_kobo_data_latest.xlsx', sheet_name='SHARC', engine='openpyxl')
-  catch = pd.read_excel('SHARKS_kobo_data_latest.xlsx', sheet_name='catch_details', engine='openpyxl')
+  trip = pd.read_excel('SHARK_kobo_data_latest.xlsx', sheet_name='SHARC', engine='openpyxl')
+  catch = pd.read_excel('SHARK_kobo_data_latest.xlsx', sheet_name='catch_details', engine='openpyxl')
   
   catch = trip.merge(catch, left_on='_uuid', right_on='_submission__uuid', how='left')
 
-  catch['Landing site'] = catch['Landing site'].str.lower()
-  catch = catch.rename(columns={'Landing site': 'landing_site'})
+  catch['landing_site'] = catch['landing_site'].str.lower()
 
   #del trip, excel_file, response
   
-  catch['Scientific_name'] = catch['Species']
-  catch.loc[catch['Type of catch'] == 'Shark-like ray','Type of catch'] = 'Shark-like Ray'
+  catch['Scientific_name'] = catch['species']
+  catch.loc[catch['type'] == 'Shark-like ray','Type of catch'] = 'Shark-like Ray'
 
-  catch.loc[catch['Data collector\'s name'] == 'old data from Collect', 'Scientific_name'] = catch[catch['Data collector\'s name'] == 'old data from Collect']['Genus']+' '+catch[catch['Data collector\'s name'] == 'old data from Collect']['Species']
+  catch.loc[catch['surveyor'] == 'old data from Collect', 'Scientific_name'] = catch[catch['surveyor'] == 'old data from Collect']['genus']+' '+catch[catch['surveyor'] == 'old data from Collect']['species']
   
   catch['Scientific_name'] = catch['Scientific_name'].str.replace('  ',' ')
   catch['Scientific_name'] = catch['Scientific_name'].str.capitalize()
 
-  catch.loc[catch['_GPS_longitude'] == '',:] = np.nan  
-  catch.loc[catch['_GPS_latitude'] == '',:] = np.nan  
-  catch['_GPS_latitude'] = catch['_GPS_latitude'].astype('float')
-  catch['_GPS_longitude'] = catch['_GPS_longitude'].astype('float')
+  catch.loc[catch['_gps_longitude'] == '',:] = np.nan  
+  catch.loc[catch['_gps_latitude'] == '',:] = np.nan  
+  catch['_gps_latitude'] = catch['_gps_latitude'].astype('float')
+  catch['_gps_longitude'] = catch['_gps_longitude'].astype('float')
 
   #catch['today'] = pd.to_datetime(catch['today'],format='mixed')
   #catch['Index'] = pd.to_datetime(catch['today'],format='mixed')
   #catch = catch.set_index('Index')
 
   # drop useless fields
-  ids = [0,1,2,4,5,7,8,10,12,13,14,15,16,18,19,20,21,22,23,24,25,26,27,28,29,30,31,32,57,58,59,60,61,62,63,64,65,66,67,114,115,116,117,118,119,120,121,122,123,124,125,126,127,128,129,130,131,132,133,134,135,136,137,138,139,140,141,142,143,144,146,162,48]
-  catch = catch.iloc[:,ids]
+  #ids = [0,1,2,4,5,7,8,10,12,13,14,15,16,18,19,20,21,22,23,24,25,26,27,28,29,30,31,32,57,58,59,60,61,62,63,64,65,66,67,114,115,116,117,118,119,120,121,122,123,124,125,126,127,128,129,130,131,132,133,134,135,136,137,138,139,140,141,142,143,144,146,162,48]
+  #catch = catch.iloc[:,ids]
 
  return catch
 
-for i in range(len(filenames)):
- print(filenames[i])
- data = load_data_from_kobo(filename=filenames[i])
- data.to_csv(filenames[i][:-5]+'.csv')
+
+for dataset in datasets:
+ print(dataset)
+ download_url = create_export_setting(ASSET_UID[dataset])
+ print(download_url)
+ data = load_data_from_kobo(dataset, download_url)
+ data.to_csv(dataset+'_kobo_data.csv')
