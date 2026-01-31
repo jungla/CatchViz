@@ -10,7 +10,7 @@ import numpy as np
 
 
 filenames = ['CATCH_kobo_data.xlsx', 'SHARKS_kobo_data.xlsx']
-filenames = ['SHARKS_kobo_data.xlsx']
+#filenames = ['SHARKS_kobo_data.xlsx']
 #filenames = ['CATCH_kobo_data.xlsx']
 
 API_TOKEN = "d2001d49f190d5cd625776dc1b08d13093cf8607" 
@@ -45,7 +45,7 @@ def load_data_from_kobo(filename): # Explicitly load 'catch_catch' sheet
 
   catch = trips.merge(catch, left_on = '_uuid', right_on='_submission__uuid', how='left')
 
-  del trips, excel_file, response
+  del trips, response
  
   catch = catch[catch['survey_real'] == 'real']
   catch = catch[catch['survey_type'] == 'catch']
