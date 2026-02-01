@@ -3,4 +3,4 @@ plotly
 openpyxl
 altair
 memory_profiler
-github
+PyGithub
