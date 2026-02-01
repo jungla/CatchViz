@@ -170,4 +170,4 @@ for dataset in datasets:
  download_url = create_export_setting(ASSET_UID[dataset])
  print(download_url)
  data = load_data_from_kobo(dataset, download_url)
- data.to_csv(dataset+'_kobo_data.csv')
+ data.to_csv('/var/data/'+dataset+'_kobo_data.csv')
