@@ -101,7 +101,7 @@ def read_data(filename):
 
 #df = read_data('SHARKS_kobo_data.csv') # parquet loses some data
 
-df = pd.read_csv('SHARKS_kobo_data.csv', low_memory=False) # parquet loses some data
+df = pd.read_csv('SHARK_kobo_data.csv', low_memory=False) # parquet loses some data
 df = pd.merge(df, df_IUCN, left_on='Scientific_name', right_on = 'Scientific_name', how='left')
 
 df['today'] = pd.to_datetime(df['today'],format='mixed')
@@ -126,7 +126,7 @@ if df.empty:
     st.warning("No data loaded. Please check your Excel file, sheet name, and column headers.")
     # Display an empty DataFrame or a message
     st.header("Filtered Data Records")
-    st.dataframe(pd.DataFrame(), use_container_width=True) # Display an empty DataFrame
+    st.dataframe(pd.DataFrame(), width='stretch') # Display an empty DataFrame
     st.stop() # Stop further execution if no data
 
 min_date = df['date'].min() #date(2019,1,1)
@@ -147,7 +147,7 @@ if len(date_range) == 2:
 
 # market filter
 
-all_markets = sorted(df['Market'].dropna().unique())
+all_markets = sorted(df['market'].dropna().unique())
 selected_markets = st.sidebar.multiselect(
     "Select Market(s):",
     options=all_markets,
@@ -208,7 +208,7 @@ selected_groups = st.sidebar.multiselect(
 
 # --- Apply Filters ---
 
-filtered_df = df[(df['date'] >= start_date) & (df['date'] <= end_date) & (df['landing_site'].isin(selected_sites) | df['Market'].isin(selected_markets)) & (df['Type of catch'].isin(selected_groups))]
+filtered_df = df[(df['date'] >= start_date) & (df['date'] <= end_date) & (df['landing_site'].isin(selected_sites) | df['market'].isin(selected_markets)) & (df['type'].isin(selected_groups))]
 
 
 # --- Main Page Content ---
@@ -256,7 +256,7 @@ st.markdown("---") # Separator
 if not filtered_df.empty:
     total_records = len(filtered_df['Scientific_name'])
     total_species = len(filtered_df['Scientific_name'].unique())
-    total_weight = filtered_df['Weight (kg)'].sum()
+    total_weight = filtered_df['weight'].sum()
 
     col1, col2, col3 = st.columns(3)
     with col1:
@@ -275,9 +275,9 @@ if not filtered_df.empty:
 
  st.header("Landing Records")
 
- coords = pd.merge(filtered_df[['landing_site','_GPS_latitude']].groupby('landing_site').median(), filtered_df[['landing_site','_GPS_longitude']].groupby('landing_site').median(), right_index=True, left_index=True)
- coords = pd.merge(coords, filtered_df[['landing_site','_GPS_latitude']].groupby('landing_site').count(), right_index=True, left_index=True)
- coords = coords.rename(columns = {'_GPS_latitude_x' : 'lat', '_GPS_longitude' : 'lon', '_GPS_latitude_y' : 'count'})
+ coords = pd.merge(filtered_df[['landing_site','_gps_latitude']].groupby('landing_site').median(), filtered_df[['landing_site','_gps_longitude']].groupby('landing_site').median(), right_index=True, left_index=True)
+ coords = pd.merge(coords, filtered_df[['landing_site','_gps_latitude']].groupby('landing_site').count(), right_index=True, left_index=True)
+ coords = coords.rename(columns = {'_gps_latitude_x' : 'lat', '_gps_longitude' : 'lon', '_gps_latitude_y' : 'count'})
  coords['count'] = coords['count']*10 
  st.map(coords.dropna(), size='count')
 
@@ -292,7 +292,7 @@ if not filtered_df.empty:
   color='landing_site'
   )
  
- con0.altair_chart(fig_effort, use_container_width=True)
+ con0.altair_chart(fig_effort, width='stretch')
 
 
  st.header('Life History Traits and IUCN Categories')
@@ -332,7 +332,7 @@ if not filtered_df.empty:
    y=alt.Y('_uuid', title='Number of Records'),
    color=alt.Color('Red_List_Status:N', scale=color_scale, legend=alt.Legend(title="IUCN Red List Status"))).properties().configure_axis(labelLimit=1000)
 
-  con1.altair_chart(fig_species, use_container_width=True)
+  con1.altair_chart(fig_species, width='stretch')
 
 
   con2 = col_viz1.container(border=True)
@@ -343,13 +343,13 @@ if not filtered_df.empty:
 
   #matrity_df = filtered_df.groupby(['group_catch','landing_site'])['_uuid'].count().reset_index().sort_values(by='_uuid', ascending=False)
 
-  filtered_df.loc[(filtered_df['Sex'] == 'Male') & (filtered_df['Shark_or_Ray'] == 'Ray'),'maturity'] = filtered_df.loc[(filtered_df['Sex'] == 'Male') & (filtered_df['Shark_or_Ray'] == 'Ray'), 'Disc width (cm)'].astype('float')/filtered_df.loc[(filtered_df['Sex'] == 'Male') & (filtered_df['Shark_or_Ray'] == 'Ray'), 'Male_size_at_maturity_cm_DW_TL'].astype('float')
+  filtered_df.loc[(filtered_df['sex'] == 'Male') & (filtered_df['Shark_or_Ray'] == 'Ray'),'maturity'] = filtered_df.loc[(filtered_df['sex'] == 'Male') & (filtered_df['Shark_or_Ray'] == 'Ray'), 'disc_width'].astype('float')/filtered_df.loc[(filtered_df['sex'] == 'Male') & (filtered_df['Shark_or_Ray'] == 'Ray'), 'Male_size_at_maturity_cm_DW_TL'].astype('float')
 
-  filtered_df.loc[(filtered_df['Sex'] == 'Female') & (filtered_df['Shark_or_Ray'] == 'Ray'),'maturity'] = filtered_df.loc[(filtered_df['Sex'] == 'Female') & (filtered_df['Shark_or_Ray'] == 'Ray'), 'Disc width (cm)'].astype('float')/filtered_df.loc[(filtered_df['Sex'] == 'Female') & (filtered_df['Shark_or_Ray'] == 'Ray'), 'Female_size_at_maturity_cm_DW_TL'].astype('float')
+  filtered_df.loc[(filtered_df['sex'] == 'Female') & (filtered_df['Shark_or_Ray'] == 'Ray'),'maturity'] = filtered_df.loc[(filtered_df['sex'] == 'Female') & (filtered_df['Shark_or_Ray'] == 'Ray'), 'disc_width'].astype('float')/filtered_df.loc[(filtered_df['sex'] == 'Female') & (filtered_df['Shark_or_Ray'] == 'Ray'), 'Female_size_at_maturity_cm_DW_TL'].astype('float')
 
-  filtered_df.loc[(filtered_df['Sex'] == 'Male') & (filtered_df['Shark_or_Ray'] == 'Shark'),'maturity'] = filtered_df.loc[(filtered_df['Sex'] == 'Male') & (filtered_df['Shark_or_Ray'] == 'Shark'), 'Total length (cm)'].astype('float')/filtered_df.loc[(filtered_df['Sex'] == 'Male') & (filtered_df['Shark_or_Ray'] == 'Shark'), 'Male_size_at_maturity_cm_DW_TL'].astype('float')
+  filtered_df.loc[(filtered_df['sex'] == 'Male') & (filtered_df['Shark_or_Ray'] == 'Shark'),'maturity'] = filtered_df.loc[(filtered_df['sex'] == 'Male') & (filtered_df['Shark_or_Ray'] == 'Shark'), 'total_length'].astype('float')/filtered_df.loc[(filtered_df['sex'] == 'Male') & (filtered_df['Shark_or_Ray'] == 'Shark'), 'Male_size_at_maturity_cm_DW_TL'].astype('float')
 
-  filtered_df.loc[(filtered_df['Sex'] == 'Female') & (filtered_df['Shark_or_Ray'] == 'Shark'),'maturity'] = filtered_df.loc[(filtered_df['Sex'] == 'Female') & (filtered_df['Shark_or_Ray'] == 'Shark'), 'Total length (cm)'].astype('float')/filtered_df.loc[(filtered_df['Sex'] == 'Female') & (filtered_df['Shark_or_Ray'] == 'Shark'), 'Female_size_at_maturity_cm_DW_TL'].astype('float')
+  filtered_df.loc[(filtered_df['sex'] == 'Female') & (filtered_df['Shark_or_Ray'] == 'Shark'),'maturity'] = filtered_df.loc[(filtered_df['sex'] == 'Female') & (filtered_df['Shark_or_Ray'] == 'Shark'), 'total_length'].astype('float')/filtered_df.loc[(filtered_df['sex'] == 'Female') & (filtered_df['Shark_or_Ray'] == 'Shark'), 'Female_size_at_maturity_cm_DW_TL'].astype('float')
 
 
   fig_maturity = alt.Chart(filtered_df).mark_bar().encode(
@@ -358,7 +358,7 @@ if not filtered_df.empty:
 #    color='group_catch'
   )
 
-  con2.altair_chart(fig_maturity, use_container_width=True)
+  con2.altair_chart(fig_maturity, width='stretch')
 
  with col_viz2:
 
@@ -375,7 +375,7 @@ if not filtered_df.empty:
    y = alt.Y('_uuid', title='Number of landings'), 
    color=alt.Color( 'Red_List_Status:N', scale=color_scale, legend=alt.Legend(title="IUCN Red List Status"))).properties().configure_axis(labelLimit=1000) 
 
-  con3.altair_chart(fig_IUCN, use_container_width=True)
+  con3.altair_chart(fig_IUCN, width='stretch')
 
   # Sex Ratio 
 
@@ -384,7 +384,7 @@ if not filtered_df.empty:
   con4.subheader('Sex Ratio')
   con4.markdown('The graph below shows the distribution of the ratios of the number of females and males landed for each species. Values larger than 1, indicate that more females are landed for the selected landings.')
 
-  sex_ratio_df = filtered_df[filtered_df['Sex'] == 'Female'].groupby('Scientific_name')['_uuid'].count()/filtered_df[filtered_df['Sex'] == 'Male'].groupby('Scientific_name')['_uuid'].count()
+  sex_ratio_df = filtered_df[filtered_df['sex'] == 'Female'].groupby('Scientific_name')['_uuid'].count()/filtered_df[filtered_df['sex'] == 'Male'].groupby('Scientific_name')['_uuid'].count()
   sex_ratio_df = sex_ratio_df.reset_index()
  
 #  site_catch_df = filtered_df.groupby(['group_catch','landing_site'])['_uuid'].count().reset_index().sort_values(by='_uuid', ascending=False)
@@ -394,7 +394,7 @@ if not filtered_df.empty:
    y = alt.Y('count():Q', title='Individuals')
   )
 
-  con4.altair_chart(fig_sex_ratio, use_container_width=True)
+  con4.altair_chart(fig_sex_ratio, width='stretch')
 
 
 else:
@@ -402,7 +402,7 @@ else:
     st.markdown("---")
     st.warning("No data available for the selected filters. Showing a preview of all loaded data.")
     st.header("Original Data Preview (Top 10 rows)")
-    st.dataframe(df.head(10), use_container_width=True) # Show head of the full dataset if filters yielded no results
+    st.dataframe(df.head(10), width='stretch') # Show head of the full dataset if filters yielded no results
 
 
 st.sidebar.markdown("---")

@@ -34,7 +34,7 @@ if df.empty:
     st.warning("No data loaded. Please check your Excel file, sheet name, and column headers.")
     # Display an empty DataFrame or a message
     st.header("Filtered Data Records")
-    st.dataframe(pd.DataFrame(), use_container_width=True) # Display an empty DataFrame
+    st.dataframe(pd.DataFrame(), width='stretch') # Display an empty DataFrame
     st.stop() # Stop further execution if no data
 
 # date filter
@@ -170,7 +170,7 @@ if not filtered_df.empty:
   color='landing_site'
   )
  
- con0.altair_chart(fig_effort, use_container_width=True)
+ con0.altair_chart(fig_effort, width='stretch')
 
 
 
@@ -190,7 +190,7 @@ if not filtered_df.empty:
    x=alt.X('boat_type', title='Type of Fishing Vessel', sort=None),
    y=alt.Y('_uuid', title='Number of Records')
    )
-  con1.altair_chart(fig_boat, use_container_width=True)
+  con1.altair_chart(fig_boat, width='stretch')
 
 
   con2 = col_viz1.container(border=True)
@@ -206,7 +206,7 @@ if not filtered_df.empty:
     color='group_catch'
   )
 
-  con2.altair_chart(fig_group, use_container_width=True)
+  con2.altair_chart(fig_group, width='stretch')
 
 
 
@@ -227,7 +227,7 @@ if not filtered_df.empty:
    y=alt.Y('count', title='Number of Records')
    )
 
-  con3.altair_chart(fig_gear, use_container_width=True)
+  con3.altair_chart(fig_gear, width='stretch')
 
   # Effort by Vessel
 
@@ -252,7 +252,7 @@ if not filtered_df.empty:
    color='boat_type'
   )
 
-  con4.altair_chart(fig_group, use_container_width=True)
+  con4.altair_chart(fig_group, width='stretch')
 
 
  st.header("Catch and Yield Analysis")
@@ -261,7 +261,7 @@ if not filtered_df.empty:
 
  st.subheader("Catch Per Unit Effort")
 
- filtered_df.loc[:,'CPUE'] = filtered_df['weight_catch']/filtered_df['people']/filtered_df['Fishing_Trip/fishing_duration']
+ filtered_df.loc[:,'CPUE'] = filtered_df['weight_catch']/filtered_df['people']/filtered_df['fishing_duration']
  
  CPUE = pd.DataFrame(filtered_df)
  CPUE.replace([np.inf, -np.inf], np.nan, inplace=True)
@@ -289,7 +289,7 @@ if not filtered_df.empty:
  # Combine layers
  fig_chart_CPUE = fig_CPUE_scatter #+ fig_CPUE_trendline
 
- st.altair_chart(fig_chart_CPUE, use_container_width=True)
+ st.altair_chart(fig_chart_CPUE, width='stretch')
 
  #col_viz1, col_viz2 = st.columns(2)
  #with col_viz1:
@@ -299,7 +299,7 @@ else:
     st.markdown("---")
     st.warning("No data available for the selected filters. Showing a preview of all loaded data.")
     st.header("Original Data Preview (Top 10 rows)")
-    st.dataframe(df.head(10), use_container_width=True) # Show head of the full dataset if filters yielded no results
+    st.dataframe(df.head(10), width='stretch') # Show head of the full dataset if filters yielded no results
 
 
 st.sidebar.markdown("---")

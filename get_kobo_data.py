@@ -119,9 +119,9 @@ def load_data_from_kobo(dataset, download_url): # Explicitly load 'catch_catch' 
  # sharks
 
  elif dataset == 'SHARK':
-  columns_trip = ['start','end','today','deviceid','survey_type','date_entry','gps','_gps_latitude','_gps_longitude','_gps_altitude','_gps_precision','country','district','survey','landing_site','market','surveyor','consent','catch_info','boat_type','other_boat','engine','fishing_location','fishing_start','fishing_end','targeted','last_catch_shark_ray','release_shark_ray','nb_sharks_unsampled','nb_rays_unsampled','nb_shark_like_rays_unsampled','market_info','shark_ray_vendors_nb','_id','_uuid','_submission_time','_index']
+  columns_trip = ['start','end','today','survey_type','_gps_latitude','_gps_longitude','survey','landing_site','market','surveyor','catch_info','boat_type','other_boat','engine','fishing_location','fishing_start','fishing_end','targeted','last_catch_shark_ray','release_shark_ray','nb_sharks_unsampled','nb_rays_unsampled','nb_shark_like_rays_unsampled','market_info','shark_ray_vendors_nb','_uuid']
 
-  columns_catch = ['type','genus','species','local_name','sex','weight','disc_width','disc_length','total_length','fork_length','precaudal_length','gear_type','gear_type/basket_traps','gear_type/hook_line','gear_type/spear_gun','gear_type/beach_seines','gear_type/ring_nets','gear_type/gill_nets_3','gear_type/gill_nets_6','gear_type/longline','gear_type/reef_seine_set_net','gear_type/drift_net','gear_type/other','gear_type_other','price_sold_for','price_sold_usd','_index','_parent_index','_submission__uuid']
+  columns_catch = ['type','genus','species','local_name','sex','weight','disc_width','disc_length','total_length','fork_length','precaudal_length','gear_type','gear_type/basket_traps','gear_type/hook_line','gear_type/spear_gun','gear_type/beach_seines','gear_type/ring_nets','gear_type/gill_nets_3','gear_type/gill_nets_6','gear_type/longline','gear_type/reef_seine_set_net','gear_type/drift_net','gear_type/other','gear_type_other','price_sold_for','price_sold_usd','_submission__uuid']
   
   try:
    with requests.get(api_url, headers=headers, stream=True) as r:
@@ -156,10 +156,6 @@ def load_data_from_kobo(dataset, download_url): # Explicitly load 'catch_catch' 
   catch.loc[catch['_gps_latitude'] == '',:] = np.nan  
   catch['_gps_latitude'] = catch['_gps_latitude'].astype('float')
   catch['_gps_longitude'] = catch['_gps_longitude'].astype('float')
-
-  #catch['today'] = pd.to_datetime(catch['today'],format='mixed')
-  #catch['Index'] = pd.to_datetime(catch['today'],format='mixed')
-  #catch = catch.set_index('Index')
 
  return catch
 
@@ -197,5 +193,5 @@ for dataset in datasets:
  print(download_url)
  data = load_data_from_kobo(dataset, download_url)
  data.to_csv(dataset+'_kobo_data.csv')
- upload_to_github(dataset+'_kobo_data.csv', 'jungla/CatchViz', os.environ['GIT_TOKEN'])
+# upload_to_github(dataset+'_kobo_data.csv', 'jungla/CatchViz', os.environ['GIT_TOKEN'])
 
