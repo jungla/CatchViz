@@ -3,21 +3,19 @@ import pandas as pd
 import io
 #import pickle
 #import blosc2
-
+from github import Github 
 import os
 import psutil
 
-print(os.getcwd())
-
-def log_mem(step_description):
-    # Get the ID of the current Python process
-    pid = os.getpid()
-    python_process = psutil.Process(pid)
-    
-    # Get memory usage in MB (RSS = Resident Set Size, the real physical memory)
-    memoryUse = python_process.memory_info().rss / 1024 / 1024
-    
-    print(f"==== [{step_description}] Total Script Memory: {memoryUse:.2f} MB ====")
+#def log_mem(step_description):
+#    # Get the ID of the current Python process
+#    pid = os.getpid()
+#    python_process = psutil.Process(pid)
+#    
+#    # Get memory usage in MB (RSS = Resident Set Size, the real physical memory)
+#    memoryUse = python_process.memory_info().rss / 1024 / 1024
+#    
+#    print(f"==== [{step_description}] Total Script Memory: {memoryUse:.2f} MB ====")
 
 
 import urllib
@@ -97,7 +95,7 @@ def load_data_from_kobo(dataset, download_url): # Explicitly load 'catch_catch' 
   del trips
   gc.collect()
  
-  log_mem('Post GC')
+  #log_mem('Post GC')
 
   catch = catch[catch['survey_real'] == 'real']
   catch = catch[catch['survey_type'] == 'catch']
@@ -141,7 +139,6 @@ def load_data_from_kobo(dataset, download_url): # Explicitly load 'catch_catch' 
 
   del trip
   gc.collect()
- 
 
   catch['landing_site'] = catch['landing_site'].str.lower()
   
@@ -170,4 +167,37 @@ for dataset in datasets:
  download_url = create_export_setting(ASSET_UID[dataset])
  print(download_url)
  data = load_data_from_kobo(dataset, download_url)
- data.to_csv('/var/data/'+dataset+'_kobo_data.csv')
+ data.to_csv(dataset+'_kobo_data.csv')
+ upload_to_github(dataset+'_kobo_data.csv', 'jungla/CatchViz', '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')
+
+
+from github import Github
+import base64
+
+def upload_to_github(file_path, repo_name, token):
+    try:
+        print("Connecting to GitHub...")
+        g = Github(token)
+        repo = g.get_repo(repo_name) # e.g., "yourusername/catch-data"
+        
+        # Read the file
+        print("Reading file...")
+        with open(file_path, "rb") as file:
+            content = file.read()
+        
+        # Path in the repo where you want to save it
+        
+        # Check if file exists to update it, or create new
+        try:
+            contents = repo.get_contents(file_path)
+            print("File exists. Updating...")
+            repo.update_file(contents.path, "Daily Data Update", content, contents.sha)
+        except:
+            print("File does not exist. Creating...")
+            repo.create_file(file_path, "Initial Data Upload", content)
+            
+        print("Upload to GitHub successful!")
+        
+    except Exception as e:
+        print(f"GitHub Upload Failed: {e}")
+
