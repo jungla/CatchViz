@@ -7,7 +7,7 @@ import io
 import os
 import psutil
 
-print(os.getpwd())
+print(os.getcwd())
 
 def log_mem(step_description):
     # Get the ID of the current Python process
