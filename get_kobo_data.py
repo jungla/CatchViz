@@ -7,6 +7,8 @@ import io
 import os
 import psutil
 
+print(os.getpwd())
+
 def log_mem(step_description):
     # Get the ID of the current Python process
     pid = os.getpid()
