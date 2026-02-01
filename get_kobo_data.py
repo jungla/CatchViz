@@ -145,7 +145,8 @@ def load_data_from_kobo(dataset, download_url): # Explicitly load 'catch_catch' 
   catch['landing_site'] = catch['landing_site'].str.lower()
   
   catch['Scientific_name'] = catch['species']
-  catch.loc[catch['type'] == 'Shark-like ray','Type of catch'] = 'Shark-like Ray'
+  catch.loc[catch['type'] == 'Shark-like ray','type'] = 'Shark-like Ray'
+  catch['type'] = catch['type'].str.capitalize()
 
   catch.loc[catch['surveyor'] == 'old data from Collect', 'Scientific_name'] = catch[catch['surveyor'] == 'old data from Collect']['genus']+' '+catch[catch['surveyor'] == 'old data from Collect']['species']
   
@@ -193,5 +194,5 @@ for dataset in datasets:
  print(download_url)
  data = load_data_from_kobo(dataset, download_url)
  data.to_csv(dataset+'_kobo_data.csv')
-# upload_to_github(dataset+'_kobo_data.csv', 'jungla/CatchViz', os.environ['GIT_TOKEN'])
+ upload_to_github(dataset+'_kobo_data.csv', 'jungla/CatchViz', os.environ['GIT_TOKEN'])
 

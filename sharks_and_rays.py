@@ -285,7 +285,7 @@ if not filtered_df.empty:
  con0 = st.container(border=True)
 
  con0.subheader('Sampling Effort')
- effort_time = filtered_df.groupby('landing_site')['_uuid'].resample('M').count().reset_index() 
+ effort_time = filtered_df.groupby('landing_site')['_uuid'].resample('ME').count().reset_index() 
  fig_effort = alt.Chart(effort_time).mark_bar().encode(
   x=alt.X('yearmonth(today):O', title='Date'),
   y=alt.Y('_uuid', title='Number of Records', stack='zero'),
