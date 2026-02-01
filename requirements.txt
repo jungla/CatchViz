@@ -3,3 +3,4 @@ plotly
 openpyxl
 altair
 python-calamine
+memory_profiler
