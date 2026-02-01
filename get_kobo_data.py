@@ -5,7 +5,14 @@ import io
 #import blosc2
 from github import Github 
 import os
-import psutil
+import urllib
+import gc
+import numpy as np
+import datetime
+
+#from memory_profiler import profile
+
+#import psutil
 
 #def log_mem(step_description):
 #    # Get the ID of the current Python process
@@ -18,19 +25,12 @@ import psutil
 #    print(f"==== [{step_description}] Total Script Memory: {memoryUse:.2f} MB ====")
 
 
-import urllib
-import gc
-import numpy as np
-import datetime
-
-from memory_profiler import profile
-
 
 datasets = ['CATCH', 'SHARK']
 #datasets = ['SHARK']
 #datasets = ['CATCH']
 
-API_TOKEN = "d2001d49f190d5cd625776dc1b08d13093cf8607" 
+API_TOKEN = os.environ['KOBO_TOKEN'] 
 
 headers = {
     "Authorization": f"Token {API_TOKEN}"
