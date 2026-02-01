@@ -168,8 +168,7 @@ for dataset in datasets:
  print(download_url)
  data = load_data_from_kobo(dataset, download_url)
  data.to_csv(dataset+'_kobo_data.csv')
- upload_to_github(dataset+'_kobo_data.csv', 'jungla/CatchViz', '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')
-
+ upload_to_github(dataset+'_kobo_data.csv', 'jungla/CatchViz', os.environ['GIT_TOKEN'])
 
 from github import Github
 import base64
