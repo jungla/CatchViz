@@ -4,6 +4,20 @@ import io
 #import pickle
 #import blosc2
 
+import os
+import psutil
+
+def log_mem(step_description):
+    # Get the ID of the current Python process
+    pid = os.getpid()
+    python_process = psutil.Process(pid)
+    
+    # Get memory usage in MB (RSS = Resident Set Size, the real physical memory)
+    memoryUse = python_process.memory_info().rss / 1024 / 1024
+    
+    print(f"==== [{step_description}] Total Script Memory: {memoryUse:.2f} MB ====")
+
+
 import urllib
 import gc
 import numpy as np
@@ -14,6 +28,7 @@ from memory_profiler import profile
 
 datasets = ['CATCH', 'SHARK']
 #datasets = ['SHARK']
+#datasets = ['CATCH']
 
 API_TOKEN = "d2001d49f190d5cd625776dc1b08d13093cf8607" 
 
@@ -52,28 +67,36 @@ def load_data_from_kobo(dataset, download_url): # Explicitly load 'catch_catch' 
  # catch
 
  if dataset == 'CATCH':
+  columns_trip = ['today','deviceid','survey_real','survey_type','_gps_latitude','_gps_longitude','data_collector','landing_site','landings','trip_info','boat_type','other_boat','engine_yn','engine','gear_type','gear_type_other','fishing_ground_name','fishing_location','fishing_ground_type','fishing_ground_depth','fishing_duration','people','boats_landed','_id','_uuid','_submission_time','_tags','_index']
+  columns_catch = ['group_catch','species_catch','weight_catch','nb_buckets_catch','wgt_buckets_catch','nb_ind_catch','wgt_ind_catch','_submission__uuid']
 
   try:
    with requests.get(api_url, headers=headers, stream=True) as r:
     r.raise_for_status()
     with open('CATCH_kobo_data_latest.xlsx', "wb") as f:
-        for chunk in r.iter_content(chunk_size=8192): 
-            f.write(chunk)
+     for chunk in r.iter_content(chunk_size=8192): 
+      f.write(chunk)
 
-   # response = requests.get(api_url, headers=headers)
-   # with open('CATCH_kobo_data_latest.xlsx', "wb") as f:
-   #  f.write(response.content)
 
   except requests.exceptions.RequestException as e:
     print(f"Error fetching data: {e}")
 
-  trips = pd.read_excel('CATCH_kobo_data_latest.xlsx', sheet_name=0, engine='calamine')
-  catch = pd.read_excel('CATCH_kobo_data_latest.xlsx', sheet_name=1, engine='calamine')
+  #log_mem('Pre read')
+
+  trips = pd.read_excel('CATCH_kobo_data_latest.xlsx', sheet_name=0, engine='openpyxl', usecols=columns_trip)
+  catch = pd.read_excel('CATCH_kobo_data_latest.xlsx', sheet_name=1, engine='openpyxl', usecols=columns_catch)
+
+  #log_mem('Post read')
 
   catch = trips.merge(catch, left_on = '_uuid', right_on='_submission__uuid', how='left')
 
+  #log_mem('Post merge')
+
   del trips
+  gc.collect()
  
+  log_mem('Post GC')
+
   catch = catch[catch['survey_real'] == 'real']
   catch = catch[catch['survey_type'] == 'catch']
   
@@ -89,38 +112,36 @@ def load_data_from_kobo(dataset, download_url): # Explicitly load 'catch_catch' 
   
   catch['people'] = catch['people'].astype('float')
 
-  #ids = [2,4,5,7,8,10,12,13,14,15,16,17,18,19,20,21,22,210,211,212,213,214,215,217,288,289,338,339,340,341,342,343,378,379,380,381]
-  #catch = catch.iloc[:, ids]
+  #log_mem('EOF')
 
  # sharks
 
  elif dataset == 'SHARK':
+  columns_trip = ['start','end','today','deviceid','survey_type','date_entry','gps','_gps_latitude','_gps_longitude','_gps_altitude','_gps_precision','country','district','survey','landing_site','market','surveyor','consent','catch_info','boat_type','other_boat','engine','fishing_location','fishing_start','fishing_end','targeted','last_catch_shark_ray','release_shark_ray','nb_sharks_unsampled','nb_rays_unsampled','nb_shark_like_rays_unsampled','market_info','shark_ray_vendors_nb','_id','_uuid','_submission_time','_index']
+
+  columns_catch = ['type','genus','species','local_name','sex','weight','disc_width','disc_length','total_length','fork_length','precaudal_length','gear_type','gear_type/basket_traps','gear_type/hook_line','gear_type/spear_gun','gear_type/beach_seines','gear_type/ring_nets','gear_type/gill_nets_3','gear_type/gill_nets_6','gear_type/longline','gear_type/reef_seine_set_net','gear_type/drift_net','gear_type/other','gear_type_other','price_sold_for','price_sold_usd','_index','_parent_index','_submission__uuid']
   
   try:
    with requests.get(api_url, headers=headers, stream=True) as r:
     r.raise_for_status()
     with open('SHARK_kobo_data_latest.xlsx', "wb") as f:
-        for chunk in r.iter_content(chunk_size=8192): 
-            f.write(chunk)
-
-#    response = requests.get(api_url, headers=headers)
-#    with open('SHARK_kobo_data_latest.xlsx', "wb") as f:
-#     f.write(response.content)
+     for chunk in r.iter_content(chunk_size=8192): 
+      f.write(chunk)
 
   except requests.exceptions.RequestException as e:
     print(f"Error fetching data: {e}")
 
-  #trip = trip.drop(['start', 'end'], axis=1)
-  trip = pd.read_excel('SHARK_kobo_data_latest.xlsx', sheet_name='SHARC', engine='calamine')
-  catch = pd.read_excel('SHARK_kobo_data_latest.xlsx', sheet_name='catch_details', engine='calamine')
 
-  del trip
-  
+  trip = pd.read_excel('SHARK_kobo_data_latest.xlsx', sheet_name='SHARC', engine='openpyxl', usecols=columns_trip)
+  catch = pd.read_excel('SHARK_kobo_data_latest.xlsx', sheet_name='catch_details', engine='openpyxl', usecols=columns_catch)
+
   catch = trip.merge(catch, left_on='_uuid', right_on='_submission__uuid', how='left')
 
-  catch['landing_site'] = catch['landing_site'].str.lower()
+  del trip
+  gc.collect()
+ 
 
-  #del trip, excel_file, response
+  catch['landing_site'] = catch['landing_site'].str.lower()
   
   catch['Scientific_name'] = catch['species']
   catch.loc[catch['type'] == 'Shark-like ray','Type of catch'] = 'Shark-like Ray'
@@ -138,10 +159,6 @@ def load_data_from_kobo(dataset, download_url): # Explicitly load 'catch_catch' 
   #catch['today'] = pd.to_datetime(catch['today'],format='mixed')
   #catch['Index'] = pd.to_datetime(catch['today'],format='mixed')
   #catch = catch.set_index('Index')
-
-  # drop useless fields
-  #ids = [0,1,2,4,5,7,8,10,12,13,14,15,16,18,19,20,21,22,23,24,25,26,27,28,29,30,31,32,57,58,59,60,61,62,63,64,65,66,67,114,115,116,117,118,119,120,121,122,123,124,125,126,127,128,129,130,131,132,133,134,135,136,137,138,139,140,141,142,143,144,146,162,48]
-  #catch = catch.iloc[:,ids]
 
  return catch
 
