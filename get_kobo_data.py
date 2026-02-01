@@ -9,6 +9,9 @@ import gc
 import numpy as np
 import datetime
 
+from memory_profiler import profile
+
+
 datasets = ['CATCH', 'SHARK']
 #datasets = ['SHARK']
 
@@ -42,8 +45,6 @@ def create_export_setting(ASSET):
  download_url = response.json().get('url')
  return download_url
 
-
-
 def load_data_from_kobo(dataset, download_url): # Explicitly load 'catch_catch' sheet
  api_url = download_url+'data.xlsx'
 
@@ -53,59 +54,67 @@ def load_data_from_kobo(dataset, download_url): # Explicitly load 'catch_catch' 
  if dataset == 'CATCH':
 
   try:
-    response = requests.get(api_url, headers=headers)
+   with requests.get(api_url, headers=headers, stream=True) as r:
+    r.raise_for_status()
     with open('CATCH_kobo_data_latest.xlsx', "wb") as f:
-     f.write(response.content)
+        for chunk in r.iter_content(chunk_size=8192): 
+            f.write(chunk)
+
+   # response = requests.get(api_url, headers=headers)
+   # with open('CATCH_kobo_data_latest.xlsx', "wb") as f:
+   #  f.write(response.content)
 
   except requests.exceptions.RequestException as e:
     print(f"Error fetching data: {e}")
 
-  trips = pd.read_excel('CATCH_kobo_data_latest.xlsx', sheet_name=0, engine='openpyxl')
-  catch = pd.read_excel('CATCH_kobo_data_latest.xlsx', sheet_name=1, engine='openpyxl')
+  trips = pd.read_excel('CATCH_kobo_data_latest.xlsx', sheet_name=0, engine='calamine')
+  catch = pd.read_excel('CATCH_kobo_data_latest.xlsx', sheet_name=1, engine='calamine')
 
   catch = trips.merge(catch, left_on = '_uuid', right_on='_submission__uuid', how='left')
 
-  del trips, response
+  del trips
  
   catch = catch[catch['survey_real'] == 'real']
   catch = catch[catch['survey_type'] == 'catch']
   
-  catch.loc[catch['Fishing_Trip/gear_type_other'] == 'Handline', 'Fishing_Trip/gear_type/pole_line'] = 1
-  catch.loc[catch['Fishing_Trip/gear_type_other'] == 'Handline', 'Fishing_Trip/gear_type'] = 'hand_line'
-  catch.loc[catch['Fishing_Trip/gear_type'] == 'pole_line', 'Fishing_Trip/gear_type'] = 'hand_line'
-  catch = catch.rename(columns={'Fishing_Trip/gear_type/pole_line': 'Fishing_Trip/gear_type/hand_line'})
+  catch.loc[catch['gear_type_other'] == 'Handline', 'gear_type/pole_line'] = 1
+  catch.loc[catch['gear_type_other'] == 'Handline', 'gear_type'] = 'hand_line'
+  catch.loc[catch['gear_type'] == 'pole_line', 'gear_type'] = 'hand_line'
+  catch = catch.rename(columns={'gear_type/pole_line': 'gear_type/hand_line'})
   
-  catch['Fishing_Trip/fishing_duration'] = catch['Fishing_Trip/fishing_duration'].replace({'>3': 4})
+  catch['fishing_duration'] = catch['fishing_duration'].replace({'>3': 4})
   
-  catch.loc[catch['Fishing_Trip/fishing_duration'] == '>3', 'Fishing_Trip/fishing_duration'] = 4
-  catch.loc[catch['Fishing_Trip/fishing_duration'] != catch['Fishing_Trip/fishing_duration'], 'Fishing_Trip/fishing_duration'] = 1
+  catch.loc[catch['fishing_duration'] == '>3', 'fishing_duration'] = 4
+  catch.loc[catch['fishing_duration'] != catch['fishing_duration'], 'fishing_duration'] = 1
   
   catch['people'] = catch['people'].astype('float')
-  catch['boats_landed'] = catch['boats_landed'] + 1 # to include also the boat that was sampled
-  catch['gear_type'] = catch['Fishing_Trip/gear_type']
-  catch['boat_type'] = catch['Fishing_Trip/boat_type']
-  catch['weight_catch'] = catch['Total_Catch_Survey/catch_catch/weight_catch']
-  catch['group_catch'] = catch['Total_Catch_Survey/catch_catch/group_catch']
 
-  ids = [2,4,5,7,8,10,12,13,14,15,16,17,18,19,20,21,22,210,211,212,213,214,215,217,288,289,338,339,340,341,342,343,378,379,380,381]
-  catch = catch.iloc[:, ids]
+  #ids = [2,4,5,7,8,10,12,13,14,15,16,17,18,19,20,21,22,210,211,212,213,214,215,217,288,289,338,339,340,341,342,343,378,379,380,381]
+  #catch = catch.iloc[:, ids]
 
  # sharks
 
  elif dataset == 'SHARK':
   
   try:
-    # simpler approach donwloading the file
-    response = requests.get(api_url, headers=headers)
+   with requests.get(api_url, headers=headers, stream=True) as r:
+    r.raise_for_status()
     with open('SHARK_kobo_data_latest.xlsx', "wb") as f:
-     f.write(response.content)
+        for chunk in r.iter_content(chunk_size=8192): 
+            f.write(chunk)
+
+#    response = requests.get(api_url, headers=headers)
+#    with open('SHARK_kobo_data_latest.xlsx', "wb") as f:
+#     f.write(response.content)
 
   except requests.exceptions.RequestException as e:
     print(f"Error fetching data: {e}")
 
   #trip = trip.drop(['start', 'end'], axis=1)
-  trip = pd.read_excel('SHARK_kobo_data_latest.xlsx', sheet_name='SHARC', engine='openpyxl')
-  catch = pd.read_excel('SHARK_kobo_data_latest.xlsx', sheet_name='catch_details', engine='openpyxl')
+  trip = pd.read_excel('SHARK_kobo_data_latest.xlsx', sheet_name='SHARC', engine='calamine')
+  catch = pd.read_excel('SHARK_kobo_data_latest.xlsx', sheet_name='catch_details', engine='calamine')
+
+  del trip
   
   catch = trip.merge(catch, left_on='_uuid', right_on='_submission__uuid', how='left')
 
