@@ -1,6 +1,5 @@
 import streamlit as st
 
-
 st.set_page_config(
     page_title="Landings Data Visualization Platform",
     page_icon="🎣",
@@ -15,6 +14,9 @@ st.markdown("""
 }
 </style>
 """, unsafe_allow_html=True)
+
+st.logo("img/WCS-logo_only.png", icon_image="img/WCS-logo_only.png", size="large")
+#st.sidebar.markdown("WCS Tanzania")
 
 bony_page= st.Page("bony_fishes.py", title="Bony Fishes", icon="🐠")
 shark_page = st.Page("sharks_and_rays.py", title="Sharks and Rays", icon="🦈")

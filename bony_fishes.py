@@ -5,6 +5,7 @@ import altair as alt
 import streamlit as st
 import plotly.express as px
 from datetime import date, datetime, timedelta
+import pydeck as pdk
 
 @st.cache_data
 def read_data(filename):
@@ -110,15 +111,15 @@ with col1:
      }
      </style>
 
-     <h1 class="h1-custom">Kobotoolbox Data Visualization Platform</h1>
+     <h1 class="h1-custom">Data Visualization Platform</h1>
      <h2 class="h2-custom">Landings of Bony Fishes</h2>
      """, unsafe_allow_html=True)
 
-with col2:
+#with col2:
 # if st.context.theme == 'dark':
  #st.image('./img/WCS-logo_white.png', width=300)
 # else:
- st.image('./img/WCS-logo.png', width=300)
+# st.image('./img/WCS-logo.png', width=300)
 
 #st.title("🎣 Fishery Catch Data Visualization")
 st.markdown(f"Visualizing data from **{start_date.strftime('%Y-%m-%d')}** to **{end_date.strftime('%Y-%m-%d')}** for sites: **{', '.join(selected_sites) if selected_sites else 'None'}**.")
@@ -156,8 +157,47 @@ if not filtered_df.empty:
  coords = pd.merge(filtered_df[['landing_site','_gps_latitude']].groupby('landing_site').median(), filtered_df[['landing_site','_gps_longitude']].groupby('landing_site').median(), right_index=True, left_index=True)
  coords = pd.merge(coords, filtered_df[['landing_site','_gps_latitude']].groupby('landing_site').count(), right_index=True, left_index=True)
  coords = coords.rename(columns = {'_gps_latitude_x' : 'lat', '_gps_longitude' : 'lon', '_gps_latitude_y' : 'count'})
+
+ coords['count'] = coords['count'] * 3 
+ coords = coords.dropna().reset_index()
+
+ # 2. Define the Dot Layer
+ dots_layer = pdk.Layer(
+     'ScatterplotLayer',
+     coords.dropna(),
+     get_position='[lon, lat]',
+     get_radius='count',
+     get_color='[200, 30, 0, 160]',
+ )
  
- st.map(coords.dropna(), size='count')
+ # 3. Define the Label Layer
+ labels_layer = pdk.Layer(
+     "TextLayer",
+     coords.dropna(),
+     get_position='[lon, lat]',
+     get_text='landing_site',
+     get_size=12,
+     get_color=[1, 1, 1],
+     get_alignment_baseline="'bottom'",
+ )
+ 
+ # 4. Render the Map
+ st.pydeck_chart(pdk.Deck(
+     map_style='light',
+     layers=[dots_layer, labels_layer],
+     #layers=[dots_layer],
+     initial_view_state=pdk.ViewState(
+         latitude=np.mean(coords.lat),
+         longitude=np.mean(coords.lon),
+         zoom=7,
+         pitch=0,
+     ),
+ ))
+
+
+
+ 
+# st.map(coords.dropna(), size='count')
 
  # 1. Catch Weight Over Time (Line Chart)
  con0 = st.container(border=True)

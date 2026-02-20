@@ -5,6 +5,7 @@ import altair as alt
 import streamlit as st
 import plotly.express as px
 from datetime import date, datetime, timedelta
+import pydeck as pdk
 
 IUCN_columns = [
     'Shark_or_Ray', 
@@ -92,7 +93,7 @@ IUCN_values = [
 
 df_IUCN = pd.DataFrame(IUCN_values, columns=IUCN_columns)
 
-#@st.cache_data
+@st.cache_data
 def read_data(filename):
  #df = pd.read_parquet(filename)
  df = pd.read_csv(filename, low_memory=False) # parquet loses some data
@@ -233,7 +234,7 @@ with col1:
      }
      </style>
 
-     <h1 class="h1-custom">Kobotoolbox Data Visualization Platform</h1>
+     <h1 class="h1-custom">Data Visualization Platform</h1>
      <h2 class="h2-custom">Landings of Sharks and Rays</h2>
      """, unsafe_allow_html=True)
 
@@ -241,11 +242,11 @@ with col1:
 
 #print(st.get_option("theme.style"))
 
-with col2:
+#with col2:
 # if st.context.theme == 'dark':
  #st.image('./img/WCS-logo_white.png', width=300)
 # else:
- st.image('./img/WCS-logo.png', width=300)
+# st.image('./img/WCS-logo.png', width=300)
 
 st.markdown(f"Visualizing data from **{start_date.strftime('%Y-%m-%d')}** to **{end_date.strftime('%Y-%m-%d')}** for sites: **{', '.join(selected_sites) if selected_sites else 'None'}**.")
 st.markdown("---") # Separator
@@ -279,7 +280,44 @@ if not filtered_df.empty:
  coords = pd.merge(coords, filtered_df[['landing_site','_gps_latitude']].groupby('landing_site').count(), right_index=True, left_index=True)
  coords = coords.rename(columns = {'_gps_latitude_x' : 'lat', '_gps_longitude' : 'lon', '_gps_latitude_y' : 'count'})
  coords['count'] = coords['count']*10 
- st.map(coords.dropna(), size='count')
+
+ coords = coords.dropna().reset_index()
+ 
+ # 2. Define the Dot Layer
+ dots_layer = pdk.Layer(
+     'ScatterplotLayer',
+     coords.dropna(),
+     get_position='[lon, lat]',
+     get_radius='count',
+     get_color='[200, 30, 0, 160]',
+ )
+ 
+ # 3. Define the Label Layer
+ labels_layer = pdk.Layer(
+     "TextLayer",
+     coords.dropna(),
+     get_position='[lon, lat]',
+     get_text='landing_site',
+     get_size=12,
+     get_color=[1, 1, 1],
+     get_alignment_baseline="'bottom'",
+ )
+ 
+ # 4. Render the Map
+ st.pydeck_chart(pdk.Deck(
+     map_style='light',
+     layers=[dots_layer, labels_layer],
+     #layers=[dots_layer],
+     initial_view_state=pdk.ViewState(
+         latitude=np.mean(coords.lat),
+         longitude=np.mean(coords.lon),
+         zoom=7,
+         pitch=0,
+     ),
+ ))
+
+
+
 
  # 1. Catch Weight Over Time (Line Chart)
  con0 = st.container(border=True)
@@ -340,6 +378,7 @@ if not filtered_df.empty:
   # Landings by IUCN Category
 
   con2.subheader("Maturity Ratio")
+  con2.markdown('Distribution of the ratios of the number of adults and juveniles landed for each species.')
 
   #matrity_df = filtered_df.groupby(['group_catch','landing_site'])['_uuid'].count().reset_index().sort_values(by='_uuid', ascending=False)
 
@@ -351,14 +390,68 @@ if not filtered_df.empty:
 
   filtered_df.loc[(filtered_df['sex'] == 'Female') & (filtered_df['Shark_or_Ray'] == 'Shark'),'maturity'] = filtered_df.loc[(filtered_df['sex'] == 'Female') & (filtered_df['Shark_or_Ray'] == 'Shark'), 'total_length'].astype('float')/filtered_df.loc[(filtered_df['sex'] == 'Female') & (filtered_df['Shark_or_Ray'] == 'Shark'), 'Female_size_at_maturity_cm_DW_TL'].astype('float')
 
+  line = alt.Chart(filtered_df).mark_rule(color='black', size=2).encode(
+    x=alt.X(datum=1) # Draws a vertical line at x=10
+  )
 
   fig_maturity = alt.Chart(filtered_df).mark_bar().encode(
-    x = alt.X('maturity:Q', title='Maturity Ratio', bin=alt.Bin(extent=[0,3], step=0.1)),
+    x = alt.X('maturity:Q', title='Maturity Ratio', bin=alt.Bin(extent=[0,3], step=0.2)),
     y = alt.Y('count():Q', title='Individuals')
 #    color='group_catch'
   )
 
-  con2.altair_chart(fig_maturity, width='stretch')
+  con2.altair_chart(fig_maturity + line, width='stretch')
+
+
+ # Fishing Gear
+
+  con5 = col_viz1.container(border=True)
+
+  con5.subheader('Fishing Gear')
+  con5.markdown('Count of the fishing gear used. In some cases, multiple gears were used during the same fishing trip.')
+#  con5.markdown('Type of gear used')
+ 
+
+  gears = ['gear_type/basket_traps',
+       'gear_type/hook_line', 'gear_type/spear_gun', 'gear_type/beach_seines',
+       'gear_type/ring_nets', 'gear_type/gill_nets_3', 'gear_type/gill_nets_6',
+       'gear_type/longline', 'gear_type/reef_seine_set_net',
+       'gear_type/drift_net']
+
+  gear_df = []
+
+  for gear in gears:
+   gear_df_t = filtered_df[filtered_df[gear] == 1]
+  
+   gear_df.append([gear[10:],gear_df_t.count()['_uuid']])
+
+  gear_df = pd.DataFrame(gear_df, columns=['gear_type','count']) 
+  gear_df = gear_df.sort_values(by='count')[-7:]
+
+  base = alt.Chart(gear_df).encode(
+    alt.Theta("count:Q").stack(True),
+    alt.Color("gear_type:N").legend(None)
+ )
+
+ fig_pie = base.mark_arc(outerRadius=120)
+ text = base.mark_text(radius=140, size=12, fill='black').encode(text="gear_type:N")
+  
+ con5.altair_chart(fig_pie + text, width='stretch')
+
+
+
+
+
+
+ # Fishing Gear Targetted
+
+
+
+
+
+
+
+
 
  with col_viz2:
 
@@ -382,7 +475,7 @@ if not filtered_df.empty:
   con4 = col_viz2.container(border=True)
 
   con4.subheader('Sex Ratio')
-  con4.markdown('The graph below shows the distribution of the ratios of the number of females and males landed for each species. Values larger than 1, indicate that more females are landed for the selected landings.')
+  con4.markdown('Distribution of the ratios of the number of females and males landed for each species.')
 
   sex_ratio_df = filtered_df[filtered_df['sex'] == 'Female'].groupby('Scientific_name')['_uuid'].count()/filtered_df[filtered_df['sex'] == 'Male'].groupby('Scientific_name')['_uuid'].count()
   sex_ratio_df = sex_ratio_df.reset_index()
@@ -390,11 +483,36 @@ if not filtered_df.empty:
 #  site_catch_df = filtered_df.groupby(['group_catch','landing_site'])['_uuid'].count().reset_index().sort_values(by='_uuid', ascending=False)
 
   fig_sex_ratio = alt.Chart(sex_ratio_df).mark_bar().encode(
-   x = alt.X('_uuid:Q', title='Sex Ratio (female/male)', bin=alt.Bin(extent=[0,3], step=0.1)),
+   x = alt.X('_uuid:Q', title='Sex Ratio (female/male)', bin=alt.Bin(extent=[0,3], step=0.2)),
    y = alt.Y('count():Q', title='Individuals')
   )
 
-  con4.altair_chart(fig_sex_ratio, width='stretch')
+  line = alt.Chart(filtered_df).mark_rule(color='black', size=2).encode(
+   x=alt.X(datum=1) # Draws a vertical line at x=10
+  )
+
+  con4.altair_chart(fig_sex_ratio + line, width='stretch')
+
+
+ # Targetted
+
+
+  con6 = col_viz2.container(border=True)
+
+  con6.subheader('Targeted')
+  con6.markdown('Count of whether elasmobranchs were targeted during the fishing trip.')
+
+  targeted_df = filtered_df.groupby('targeted').count().reset_index()
+
+  base = alt.Chart(targeted_df).encode(
+    alt.Theta("_uuid:Q").stack(True),
+    alt.Color("targeted:N").legend(None)
+  )
+
+  fig_pie = base.mark_arc(outerRadius=120)
+  text = base.mark_text(radius=140, size=12, fill='black').encode(text="targeted:N")
+  
+  con6.altair_chart(fig_pie + text, width='stretch')
 
 
 else:
@@ -403,8 +521,4 @@ else:
     st.warning("No data available for the selected filters. Showing a preview of all loaded data.")
     st.header("Original Data Preview (Top 10 rows)")
     st.dataframe(df.head(10), width='stretch') # Show head of the full dataset if filters yielded no results
-
-
-st.sidebar.markdown("---")
-st.sidebar.info("Data collected with Kobotoolbox at landing sites in Tanzani and updated every 10 days. Raw data can be found at https://zenodo.org/records/15229813")
 
