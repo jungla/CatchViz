@@ -9,17 +9,11 @@ import pydeck as pdk
 
 @st.cache_data
 def read_data(filename):
- #df = pd.read_parquet(filename)
  df = pd.read_csv(filename, low_memory=False) # parquet loses some data
  return df
 
-#df = read_data('CATCH_kobo_data.parquet')
 df = read_data('CATCH_kobo_data.csv') # parquet loses some data
 
-
-#landing_sites = ['moa','ndumbani','mkokotoni','fumba','kizimkazi','msuka','wesha','mkoani']
-landing_sites = ['msuka','kojani','mvumoni_furaha','mtangani','sahare','tongoni','kigombe']
-df = df[df['landing_site'].isin(landing_sites)]
 
 # --- Sidebar Filters ---
 
