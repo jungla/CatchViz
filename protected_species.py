@@ -45,8 +45,8 @@ st.markdown("""
         display: inline-block;
         margin-bottom: 8px;
     }
-    .badge-alert { background-color: #fee2e2; color: #ef4444; }
-    .badge-success { background-color: #dcfce7; color: #10b981; }
+    .badge-no_trading { background-color: #fee2e2; color: #ef4444; }
+    .badge-no_landing { background-color: red; color: yellow; }
     .taxa-group {
         color: #3b82f6;
         font-size: 10px;
@@ -96,7 +96,7 @@ if selected_status != 'ALL STATUSES':
     filtered_df = filtered_df[filtered_df['Provision'].str.upper() == selected_status]
 
 # --- Dashboard Layout ---
-st.title("Species Explorer")
+st.title("Zanzibar Protected Species List")
 
 # Metric Cards
 m1, m2, m3, m4 = st.columns(4)
@@ -125,7 +125,7 @@ elif view_mode == "Grid":
         for j, (idx, row) in enumerate(filtered_df.iloc[i:i+grid_cols].iterrows()):
             with cols[j]:
                 status = str(row['Provision']).lower()
-                badge_class = "badge-alert" if status in ['no landing', 'no trading'] else "badge-success"
+                badge_class = "badge-no_trading" if status == 'no trading' else "badge-no_landing"
                 img = row['Image'] if pd.notna(row['Image']) else "https://via.placeholder.com/400x300?text=No+Image"
                 st.markdown(f"""
                 <div class="species-card">
