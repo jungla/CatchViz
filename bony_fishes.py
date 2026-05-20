@@ -14,13 +14,10 @@ def read_data(filename):
 
 df = read_data('CATCH_kobo_data.csv') # parquet loses some data
 
-
 # --- Sidebar Filters ---
-
 
 #st.sidebar.header("Type of fishery")
 #st.sidebar.success("Select a demo above.")
-
 
 st.sidebar.header("Filters ⚙️")
 

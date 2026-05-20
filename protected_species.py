@@ -71,9 +71,6 @@ df = load_data()
 
 # --- Sidebar Filters ---
 with st.sidebar:
-    st.markdown("### 🌊 MarineSentinel")
-    st.markdown("*Inventory Hub v1.0*")
-    st.divider()
     
     search_term = st.text_input("Search catalog...", placeholder="Name, family, genus...")
     groups = ['ALL GROUPS'] + sorted([str(g) for g in df['Group'].unique() if pd.notna(g)])
@@ -137,9 +134,7 @@ elif view_mode == "Grid":
                         <span class="badge {badge_class}">{row['Provision']}</span>
                         <div class="taxa-group">{row['Group']}</div>
                         <p class="species-name">{row['Common name']}</p>
-                        <p class="scientific-name">{row['Genus']} {row['Species']}</p>
-                        <hr style="margin: 10px 0; border: none; border-top: 1px solid #f1f5f9;">
-                        <div style="font-size: 8px; color: #cbd5e1; font-weight: bold;">FAMILY: {row['Family']}</div>
+                        <p class="scientific-name">{row['Family']} {row['Genus']} {row['Species']}</p>
                     </div>
                 </div>
                 """, unsafe_allow_html=True)
