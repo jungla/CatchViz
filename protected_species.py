@@ -45,8 +45,9 @@ st.markdown("""
         display: inline-block;
         margin-bottom: 8px;
     }
-    .badge-no_trading { background-color: #fee2e2; color: #ef4444; }
-    .badge-no_landing { background-color: red; color: yellow; }
+    .badge-research { background-color: lavender; color: gray; }
+    .badge-consumption { background-color: #fee2e2; color: #ef4444; }
+    .badge-release { background-color: red; color: yellow; }
     .taxa-group {
         color: #3b82f6;
         font-size: 10px;
@@ -125,7 +126,9 @@ elif view_mode == "Grid":
         for j, (idx, row) in enumerate(filtered_df.iloc[i:i+grid_cols].iterrows()):
             with cols[j]:
                 status = str(row['Provision']).lower()
-                badge_class = "badge-no_trading" if status == 'no trading' else "badge-no_landing"
+                if status == 'only consumption': badge_class = "badge-consumption"
+                elif status == "always release": badge_class = "badge-release"
+                else: badge_class = "badge-research"
                 img = row['Image'] if pd.notna(row['Image']) else "https://via.placeholder.com/400x300?text=No+Image"
                 st.markdown(f"""
                 <div class="species-card">
