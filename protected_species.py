@@ -100,11 +100,29 @@ if selected_status != 'ALL STATUSES':
 st.title("Zanzibar Protected Species List")
 
 # Metric Cards
-m1, m2, m3, m4 = st.columns(4)
+m1, m2, m3, m4, m5 = st.columns(5)
 m1.metric("TOTAL CATALOG", len(df))
-m2.metric("NO LANDING", len(df[df['Provision'].str.lower() == 'no landing']))
-m3.metric("NO TRADING", len(df[df['Provision'].str.lower() == 'no trading']))
-m4.metric("TAXA GROUPS", df['Group'].nunique())
+m2.metric("ALWAYS RELEASE", len(df[df['Provision'].str.lower() == 'always release']))
+m3.metric("ONLY CONSUMTPION", len(df[df['Provision'].str.lower() == 'only consumption']))
+m4.metric("RESEARCH ONLY", len(df[df['Provision'].str.lower() == 'research only']))
+m5.metric("TAXA GROUPS", df['Group'].nunique())
+
+
+# Create 3 columns
+col1, col2, col3 = st.columns(3)
+
+with col1:
+    st.subheader("ALWAYS RELEASE")
+    st.info("This is a group of species that is illegal to land. If they are caught, dead or alive, they have to be released. Any species caught in this group has to be reported to the auctioneer or the fishery official.")
+
+with col2:
+    st.subheader("ONLY CONSUMPTION")
+    st.info("These are species that are ecologically threatened and cannot be targeted. If caught alive, they must be released. If caught dead, they can be landed and consumed. They cannot be traded or sold in local or international markets.")
+
+with col3:
+    st.subheader("RESEARCH ONLY")
+    st.info("These are species that are important for science and that are highly threatened. If they are caught alive, they must be released. If they are caught dead or injured, they can be landed but must be handed over to a government official or a recognized researcher.")
+
 
 # Chart
 st.markdown("### Distribution by Taxonomy Group")
