@@ -28,8 +28,8 @@ import datetime
 
 
 
-datasets = ['CATCH', 'SHARK']
-#datasets = ['SHARK']
+datasets = ['CATCH', 'SHARK', 'RESTORATION']
+datasets = ['RESTORATION']
 #datasets = ['CATCH']
 
 API_TOKEN = os.environ['KOBO_TOKEN'] 
@@ -38,7 +38,8 @@ headers = {
     "Authorization": f"Token {API_TOKEN}"
 }
 
-ASSET_UID = {'SHARK':'aaknL3DQQgkgZ8iay89X5P', 'CATCH':'a7bZivgzH5Y6kxP2nhG98w'}
+ASSET_UID = {'SHARK':'aaknL3DQQgkgZ8iay89X5P', 'CATCH':'a7bZivgzH5Y6kxP2nhG98w', 'RESTORATION':'aCCZTXLPwc4am5GfuAa7qV'}
+
 BASE_URL = 'https://kf.kobotoolbox.org/api/v2/assets'
 
 def create_export_setting(ASSET):
@@ -114,6 +115,7 @@ def load_data_from_kobo(dataset, download_url): # Explicitly load 'catch_catch' 
   
   catch['people'] = catch['people'].astype('float')
 
+  output = catch
   #log_mem('EOF')
 
  # sharks
@@ -158,7 +160,25 @@ def load_data_from_kobo(dataset, download_url): # Explicitly load 'catch_catch' 
   catch['_gps_latitude'] = catch['_gps_latitude'].astype('float')
   catch['_gps_longitude'] = catch['_gps_longitude'].astype('float')
 
- return catch
+  output = catch
+
+ elif dataset == 'RESTORATION':
+  gc.collect()
+
+  try:
+   with requests.get(api_url, headers=headers, stream=True) as r:
+    r.raise_for_status()
+    with open('RESTORATION_kobo_data_latest.xlsx', "wb") as f:
+     for chunk in r.iter_content(chunk_size=8192):
+      f.write(chunk)
+
+  except requests.exceptions.RequestException as e:
+    print(f"Error fetching data: {e}")
+
+  restoration = pd.read_excel('RESTORATION_kobo_data_latest.xlsx', engine='openpyxl')
+
+  output = restoration
+ return output
 
 def upload_to_github(file_path, repo_name, token):
     try:

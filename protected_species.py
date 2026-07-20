@@ -4,7 +4,7 @@ import plotly.express as px
 
 # --- Page Config ---
 st.set_page_config(
-    page_title="MarineSentinel Inventory Hub",
+    page_title="Marine Protected Species List, Zanzibar",
     page_icon="🌊",
     layout="wide",
     initial_sidebar_state="expanded",
@@ -106,7 +106,6 @@ m2.metric("ALWAYS RELEASE", len(df[df['Provision'].str.lower() == 'always releas
 m3.metric("ONLY CONSUMTPION", len(df[df['Provision'].str.lower() == 'only consumption']))
 m4.metric("RESEARCH ONLY", len(df[df['Provision'].str.lower() == 'research only']))
 m5.metric("TAXA GROUPS", df['Group'].nunique())
-
 
 # Create 3 columns
 col1, col2, col3 = st.columns(3)
