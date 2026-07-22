@@ -1,7 +1,7 @@
 import streamlit as st
 
 st.set_page_config(
-    page_title="Landings Data Visualization Platform",
+    page_title="WCS Tanzania Data Visualization Platform",
     page_icon="🎣",
     layout="wide" # Use wide layout for more space for charts
 )

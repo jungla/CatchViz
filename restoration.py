@@ -7,91 +7,6 @@ import plotly.express as px
 from datetime import date, datetime, timedelta
 import pydeck as pdk
 
-IUCN_columns = [
-    'Shark_or_Ray', 
-    'Scientific_name', 
-    'Male_size_at_maturity_cm_DW_TL', 
-    'Female_size_at_maturity_cm_DW_TL', 
-    'Red_List_Status', 
-    'IUCN_color'
-]
-
-IUCN_values = [
-    ['Ray', 'Acroteriobatus zanzibarensis', np.nan, np.nan, 'NT', 'seagreen'],
-    ['Ray', 'Aetobatus ocellatus', 100, 150, 'VU', 'lime'],
-    ['Ray', 'Aetomylaeus vespertilio', 170, np.nan, 'EN', 'darkorange'],
-    ['Shark', 'Alopias pelagicus', 250, 250, 'EN', 'darkorange'],
-    ['Shark', 'Alopias superciliosus', 245, 280, 'VU', 'lime'],
-    ['Ray', 'Bathytoshia lata', 100, 110, 'LC', 'blue'],
-    ['Shark', 'Carcharhinus albimarginatus', 160, 160, 'VU', 'lime'],
-    ['Shark', 'Carcharhinus altimus', 215, 225, 'NT', 'seagreen'],
-    ['Shark', 'Carcharhinus amblyrhynchos', 110, 120, 'EN', 'darkorange'],
-    ['Shark', 'Carcharhinus brevipinna', np.nan, np.nan, 'VU', 'lime'],
-    ['Shark', 'Carcharhinus falciformis', 180, 180, 'VU', 'lime'],
-    ['Shark', 'Carcharhinus humani', 75, np.nan, 'DD', 'grey'],
-    ['Shark', 'Carcharhinus leucas', 160, 180, 'NT', 'seagreen'],
-    ['Shark', 'Carcharhinus limbatus', np.nan, np.nan, 0, np.nan],
-    ['Shark', 'Carcharhinus longimanus', 170, 175, 'CR', 'red'],
-    ['Shark', 'Carcharhinus melanopterus', 90, 95, 'VU', 'lime'],
-    ['Shark', 'Carcharhinus obscurus', 215, 220, 'EN', 'darkorange'],
-    ['Shark', 'Carcharhinus plumbeus', np.nan, np.nan, 0, np.nan],
-    ['Shark', 'Carcharhinus sealei', np.nan, np.nan, 0, np.nan],
-    ['Shark', 'Carcharhinus sorrah', 90, 95, 'NT', 'seagreen'],
-    ['Shark', 'Carcharhinus spp', np.nan, np.nan, 'NE', 'grey'],
-    ['Shark', 'Carcharodon carcharias', 310, 400, 'VU', 'lime'],
-    ['Shark', 'Centrophorus spp', np.nan, np.nan, 'NE', 'grey'],
-    ['Shark', 'Cirrhigaleus asper', 90, 85, 'DD', 'grey'],
-    ['Ray', 'Dasyatidae', np.nan, np.nan, 'NE', 'grey'],
-    ['Shark', 'Echinorhinus brucus', np.nan, np.nan, 0, np.nan],
-    ['Shark', 'Galeocerdo cuvier', 250, 275, 'NT', 'seagreen'],
-    ['Shark', 'Hemipristis elongata', 110, 120, 'VU', 'lime'],
-    ['Shark', 'Heptranchias perlo', 75, 90, 'NT', 'seagreen'],
-    ['Shark', 'Heterodontus ramalheira', np.nan, np.nan, 'DD', 'grey'],
-    ['Shark', 'Hexanchus griseus', 125, 400, 'NT', 'seagreen'],
-    ['Shark', 'Hexanchus nakamurai', 140, 125, 'NT', 'seagreen'],
-    ['Ray', 'Himantura leoparda', 70, np.nan, 'VU', 'lime'],
-    ['Ray', 'Himantura uarnak', 80, np.nan, 'VU', 'lime'],
-    ['Shark', 'Hypogaleus hyugaensis', 100, 100, 'LC', 'blue'],
-    ['Shark', 'Isurus oxyrinchus', 165, 265, 'EN', 'darkorange'],
-    ['Shark', 'Isurus paucus', 165, 265, 'EN', 'darkorange'],
-    ['Shark', 'Loxodon macrorhinus', 60, 80, 'LC', 'blue'],
-    ['Ray', 'Maculabatis ambigua', 60, 60, 'NT', 'seagreen'],
-    ['Ray', 'Megatrygon microps', np.nan, np.nan, 'DD', 'grey'],
-    ['Ray', 'Mobula eregoodoo', 100, 90, 'EN', 'darkorange'],
-    ['Ray', 'Mobula kuhlii', 115, 115, 'EN', 'darkorange'],
-    ['Ray', 'Mobula mobular', 200, 235, 'EN', 'darkorange'],
-    ['Ray', 'Mobula tarapacana', 235, 270, 'EN', 'darkorange'],
-    ['Ray', 'Mobula thurstoni', 150, 150, 'EN', 'darkorange'],
-    ['Shark', 'Mustelus manazo', 55, 60, 'EN', 'darkorange'],
-    ['Shark', 'Mustelus mosis', 65, 75, 'NT', 'seagreen'],
-    ['Ray', 'Neotrygon caeruleopunctata', 30, np.nan, 'NE', 'grey'],
-    ['Shark', 'Odontaspis ferox', 200, 300, 'VU', 'lime'],
-    ['Ray', 'Pastinachus ater', np.nan, np.nan, 'LC', 'blue'],
-    ['Ray', 'Pateobatis fai', 110, np.nan, 'VU', 'lime'],
-    ['Ray', 'Pateobatis jenkinsii', 75, np.nan, 'VU', 'lime'],
-    ['Shark', 'Prionace glauca', 185, 185, 'NT', 'seagreen'],
-    ['Shark', 'Pseudoginglymostoma brevicaudatum', 60, 55, 'CR', 'red'],
-    ['Ray', 'Rhina ancylostoma', np.nan, np.nan, 0, np.nan],
-    ['Ray', 'Rhina ancylostomus', 150, 180, 'CR', 'red'],
-    ['Ray', 'Rhinobatos austini', np.nan, np.nan, 'DD', 'grey'],
-    ['Ray', 'Rhinoptera jayakari', 80, np.nan, 'NE', 'grey'],
-    ['Shark', 'Rhizoprionodon acutus', 55, 60, 'VU', 'lime'],
-    ['Ray', 'Rhynchobatus australiae', 125, 155, 'CR', 'red'],
-    ['Shark', 'Sphyrna lewini', 140, 210, 'CR', 'red'],
-    ['Shark', 'Sphyrna mokarran', 225, 210, 'CR', 'red'],
-    ['Shark', 'Sphyrna spp', np.nan, np.nan, 0, np.nan],
-    ['Shark', 'Sphyrna zygaena', 250, 265, 'VU', 'lime'],
-    ['Shark', 'Squalus mitsukurii', np.nan, np.nan, 0, np.nan],
-    ['Shark', 'Squalus spp', 90, 85, 'NE', 'grey'],
-    ['Shark', 'Stegostoma tigrinum', 150, 170, 'EN', 'darkorange'],
-    ['Ray', 'Taeniura lymma', 20, np.nan, 'NT', 'seagreen'],
-    ['Ray', 'Taeniurops meyeni', 100, np.nan, 'VU', 'lime'],
-    ['Ray', 'Torpedo fuscomaculata', np.nan, np.nan, 'DD', 'grey'],
-    ['Shark', 'Triaenodon obesus', 105, 105, 'VU', 'lime'],
-    ['Ray', 'Urogymnus asperrimus', 90, 100, 'VU', 'lime']
-]
-
-df_IUCN = pd.DataFrame(IUCN_values, columns=IUCN_columns)
 
 @st.cache_data
 def read_data(filename):
@@ -99,19 +14,9 @@ def read_data(filename):
  df = pd.read_csv(filename, low_memory=False) # parquet loses some data
  return df
 
+df = pd.read_csv('RESTORATION_kobo_data.csv', low_memory=False) # parquet loses some data
 
-#df = read_data('SHARKS_kobo_data.csv') # parquet loses some data
-
-df = pd.read_csv('SHARK_kobo_data.csv', low_memory=False) # parquet loses some data
-df = pd.merge(df, df_IUCN, left_on='Scientific_name', right_on = 'Scientific_name', how='left')
-
-df['today'] = pd.to_datetime(df['today'],format='mixed')
-
-#df['Index'] = pd.to_datetime(df['today'],format='mixed')
-
-# merge with data in field Date coming from import of old data
-#df.loc[df['Date'] != '', 'today'] = df['Date']
-#df = df.drop('Date', axis=1)
+df['today'] = pd.to_datetime(df['Date'],format='mixed')
 
 df['date'] = pd.to_datetime(df['today'],format='mixed').dt.date
 df['month'] = df['today'].dt.month
@@ -146,21 +51,22 @@ end_date = max_date
 if len(date_range) == 2:
     start_date, end_date = date_range
 
-# market filter
 
-all_markets = sorted(df['market'].dropna().unique())
-selected_markets = st.sidebar.multiselect(
-    "Select Market(s):",
-    options=all_markets,
-    default=all_markets,
-    key='market_filter'
+# site type filter
+
+all_site_types = sorted(df['site_type'].dropna().unique())
+selected_site_type = st.sidebar.multiselect(
+    "Select Site(s):",
+    options=all_site_types,
+    default=all_site_types,
+    key='site_type_filter'
 )
 
 # site filter
 
-all_sites = sorted(df['landing_site'].dropna().unique())
-selected_sites = st.sidebar.multiselect(
-    "Select Landing Site(s):",
+all_sites = sorted(df['restoration_site'].dropna().unique())
+selected_restoration_site = st.sidebar.multiselect(
+    "Select Site(s):",
     options=all_sites,
     default=all_sites,
     key='site_filter'
@@ -186,13 +92,6 @@ selected_sites = st.sidebar.multiselect(
 #    st.session_state.secondary_selection = [new_options[:]] if new_options else []
 
 
-all_groups = ['Ray', 'Shark'] #sorted(df['Type of catch'].dropna().unique())
-selected_groups = st.sidebar.multiselect(
-    "Select Group(s):",
-    options=all_groups,
-    default=['Ray', 'Shark'],
-    key='selected_groups'
-)
 
 # species filter
  
@@ -209,7 +108,7 @@ selected_groups = st.sidebar.multiselect(
 
 # --- Apply Filters ---
 
-filtered_df = df[(df['date'] >= start_date) & (df['date'] <= end_date) & (df['landing_site'].isin(selected_sites) | df['market'].isin(selected_markets)) & (df['type'].isin(selected_groups))]
+filtered_df = df[(df['date'] >= start_date) & (df['date'] <= end_date) & (df['restoration_site'].isin(selected_restoration_site) | df['site_type'].isin(selected_site_type))]
 
 
 # --- Main Page Content ---
@@ -235,7 +134,7 @@ with col1:
      </style>
 
      <h1 class="h1-custom">Data Visualization Platform</h1>
-     <h2 class="h2-custom">Landings of Sharks and Rays</h2>
+     <h2 class="h2-custom">Coral Restoration Projects</h2>
      """, unsafe_allow_html=True)
 
 #    st.write('Artisanal Landings Data Visualization')
@@ -248,16 +147,15 @@ with col1:
 # else:
 # st.image('./img/WCS-logo.png', width=300)
 
-st.markdown(f"Visualizing data from **{start_date.strftime('%Y-%m-%d')}** to **{end_date.strftime('%Y-%m-%d')}** for sites: **{', '.join(selected_sites) if selected_sites else 'None'}**.")
+st.markdown(f"Visualizing data from **{start_date.strftime('%Y-%m-%d')}** to **{end_date.strftime('%Y-%m-%d')}** for sites: **{', '.join(selected_restoration_site) if selected_restoration_site else 'None'}**.")
 st.markdown("---") # Separator
 
-
-# I would add a time series of sampling days for the landing sites
+# Time series of activities per site
 
 if not filtered_df.empty:
-    total_records = len(filtered_df['Scientific_name'])
-    total_species = len(filtered_df['Scientific_name'].unique())
-    total_weight = filtered_df['weight'].sum()
+    total_transplanted_corals = len(filtered_df['Scientific_name'])
+    total_nursery_corals = len(filtered_df['Scientific_name'].unique())
+    total_area_restored = filtered_df['weight'].sum()
 
     col1, col2, col3 = st.columns(3)
     with col1:
@@ -274,7 +172,7 @@ else:
 
 if not filtered_df.empty:
 
- st.header("Landing Records")
+ st.header("Coral Restoration Records")
 
  coords = pd.merge(filtered_df[['landing_site','_gps_latitude']].groupby('landing_site').median(), filtered_df[['landing_site','_gps_longitude']].groupby('landing_site').median(), right_index=True, left_index=True)
  coords = pd.merge(coords, filtered_df[['landing_site','_gps_latitude']].groupby('landing_site').count(), right_index=True, left_index=True)
