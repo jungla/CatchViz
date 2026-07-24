@@ -1,11 +1,10 @@
 import requests
-from github import Github
+from github import Auth, Github, GithubException
 import base64
 import pandas as pd
 import io
 #import pickle
 #import blosc2
-from github import Github 
 import os
 import urllib
 import gc
@@ -30,7 +29,7 @@ import datetime
 
 datasets = ['CATCH', 'SHARK', 'RESTORATION']
 #datasets = ['RESTORATION']
-#datasets = ['CATCH']
+datasets = ['CATCH']
 
 API_TOKEN = os.environ['KOBO_TOKEN'] 
 
@@ -181,28 +180,34 @@ def load_data_from_kobo(dataset, download_url): # Explicitly load 'catch_catch' 
  return output
 
 def upload_to_github(file_path, repo_name, token):
+
+    auth = Auth.Token(token)
+
     try:
         print("Connecting to GitHub...")
-        g = Github(token)
+        g = Github(auth=auth)
         repo = g.get_repo(repo_name) # e.g., "yourusername/catch-data"
 
         # Read the file
         print("Reading file...")
         with open(file_path, "rb") as file:
-            content = file.read()
+         content = file.read()
 
         # Path in the repo where you want to save it
 
         # Check if file exists to update it, or create new
-        try:
-            contents = repo.get_contents(file_path)
-            print("File exists. Updating...")
-            repo.update_file(contents.path, "Daily Data Update", content, contents.sha)
-        except:
-            print("File does not exist. Creating...")
-            repo.create_file(file_path, "Initial Data Upload", content)
-
-        print("Upload to GitHub successful!")
+         try:
+          contents = repo.get_contents(file_path)
+          print("File exists. Updating with new one.")
+          repo.update_file(contents.path, "Daily Data Update", content, contents.sha)
+         except GithubException as e:
+          if e.status == 404:
+           print("File does not exist. Creating new.")
+           repo.create_file(file_path, "Initial Data Upload", content)
+          else:
+           raise
+ 
+         print("Upload to GitHub successful!")
 
     except Exception as e:
         print(f"GitHub Upload Failed: {e}")
