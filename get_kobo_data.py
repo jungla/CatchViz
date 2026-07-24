@@ -29,7 +29,7 @@ import datetime
 
 datasets = ['CATCH', 'SHARK', 'RESTORATION']
 #datasets = ['RESTORATION']
-datasets = ['CATCH']
+#datasets = ['CATCH']
 
 API_TOKEN = os.environ['KOBO_TOKEN'] 
 
