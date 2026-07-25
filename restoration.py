@@ -23,6 +23,25 @@ df['month'] = df['today'].dt.month
 df['year'] = df['today'].dt.year
 df = df.set_index('today')
 
+# merge coordinates of the sites
+
+coords = [
+['nursery_kirui',-4.77763, 39.19956],
+['transplanting_kirui_shangani',-4.75601,39.21939],
+['transplanting_kirui_corner',-4.77067,39.21169],
+['transplanting_kirui_exp',-4.75253,39.23363],
+['nursery_kigombe',-5.26431,39.07310],
+['transplanting_kigombe_taa',-5.27990,39.07984],
+['transplanting_kigome_makome',-5.29569,39.09755],
+['nursery_msuka',-4.90274,39.72391],
+['transplanting_msuka_panga_pung',-4.8703,39.8054]
+]
+
+
+coords = pd.DataFrame(coords, columns=['site_name', 'latitude', 'longitude'])
+
+df = pd.merge(df, coords)
+
 # --- Sidebar Filters ---
 
 st.sidebar.header("Filters ⚙️")
@@ -52,63 +71,19 @@ if len(date_range) == 2:
     start_date, end_date = date_range
 
 
-# site type filter
-
-all_site_types = sorted(df['site_type'].dropna().unique())
-selected_site_type = st.sidebar.multiselect(
-    "Select Site(s):",
-    options=all_site_types,
-    default=all_site_types,
-    key='site_type_filter'
-)
-
 # site filter
 
-all_sites = sorted(df['restoration_site'].dropna().unique())
-selected_restoration_site = st.sidebar.multiselect(
+all_sites = sorted(df['site_name'].dropna().unique())
+selected_site_name= st.sidebar.multiselect(
     "Select Site(s):",
     options=all_sites,
     default=all_sites,
     key='site_filter'
 )
 
-# type catch filter
-
-#if 'secondary_options' not in st.session_state:
-#    # Start with the options corresponding to the first category by default
-##    default_category = df_IUCN['Scientific_name'].to_list()
-#    st.session_state.secondary_options = df_IUCN['Scientific_name'].to_list()
-#    st.session_state.secondary_selection = [st.session_state.secondary_options[0]] 
-#
-#def update_species_menu():
-#    """Callback function executed when the primary menu changes."""
-#    # Read the new primary selection's key
-#    selected_category = st.session_state.primary_selection 
-#
-#    # Update the list of options for the secondary menu
-#    st.session_state.secondary_options = df_IUCN[df_IUCN['Shark_or_Ray'].isin(selected_category)]['Scientific_name'].to_list()
-#
-#    new_options = st.session_state.secondary_options
-#    st.session_state.secondary_selection = [new_options[:]] if new_options else []
-
-
-
-# species filter
- 
-
-#top_species = df.groupby(['Scientific_name'])['_uuid'].count().sort_values()
-#top_species = top_species[top_species > np.percentile(top_species,80)].sort_index()
-#
-#selected_species = st.sidebar.multiselect(
-#    "Select Top Species(s):",
-#    options=st.session_state.secondary_options,
-#    default=st.session_state.secondary_options,
-#    key='secondary_selection',
-#)
-
 # --- Apply Filters ---
 
-filtered_df = df[(df['date'] >= start_date) & (df['date'] <= end_date) & (df['restoration_site'].isin(selected_restoration_site) | df['site_type'].isin(selected_site_type))]
+filtered_df = df[(df['date'] >= start_date) & (df['date'] <= end_date) & (df['site_name'].isin(selected_site_name))]
 
 
 # --- Main Page Content ---
@@ -137,8 +112,6 @@ with col1:
      <h2 class="h2-custom">Coral Restoration Projects</h2>
      """, unsafe_allow_html=True)
 
-#    st.write('Artisanal Landings Data Visualization')
-
 #print(st.get_option("theme.style"))
 
 #with col2:
@@ -147,23 +120,26 @@ with col1:
 # else:
 # st.image('./img/WCS-logo.png', width=300)
 
-st.markdown(f"Visualizing data from **{start_date.strftime('%Y-%m-%d')}** to **{end_date.strftime('%Y-%m-%d')}** for sites: **{', '.join(selected_restoration_site) if selected_restoration_site else 'None'}**.")
+st.markdown(f"Visualizing data from **{start_date.strftime('%Y-%m-%d')}** to **{end_date.strftime('%Y-%m-%d')}** for sites: **{', '.join(selected_site_name) if selected_site_name else 'None'}**.")
 st.markdown("---") # Separator
 
 # Time series of activities per site
 
 if not filtered_df.empty:
-    total_transplanted_corals = len(filtered_df['Scientific_name'])
-    total_nursery_corals = len(filtered_df['Scientific_name'].unique())
-    total_area_restored = filtered_df['weight'].sum()
+    total_transplanted_corals = sum(filtered_df.groupby('site_name')['total_fragments_transplanted_to_date'].max())
+    total_nursery_corals = sum(filtered_df.groupby('site_name')['total_fragments_in_nursery_to_date'].max())
+    total_reefstar_area = sum(filtered_df.groupby('site_name')['total_reef_starts_deployed_to_date'].max()) * 1 # 1x1 m per reef star?
+    total_fencewire_area = sum(filtered_df.groupby('site_name')['total_fence_wires_deployed_to_date'].max()) * 30 # 5x2 m per fence wire?
+    total_coralclips_area = sum(filtered_df.groupby('site_name')['total_fragments_on_clips_to_date'].max()) * 0.25 # 1 fragment on half a 50x50 cm tile?
+    total_area_restored = (total_reefstar_area + total_fencewire_area + total_coralclips_area)/1e4
 
     col1, col2, col3 = st.columns(3)
     with col1:
-        st.metric(label="Number of Records", value=total_records)
+        st.metric(label="Number of Corals Transplanted to Date", value=total_transplanted_corals)
     with col2:
-        st.metric(label="Number of Species Landed", value=total_species)
+        st.metric(label="Number Corals in Nursery to Date", value=total_nursery_corals)
     with col3:
-        st.metric(label="Total Catch (kg)", value=f"{total_weight:,.2f}")
+        st.metric(label="Total Area Restored (ha)", value=f"{total_area_restored:,.2f}")
     st.markdown("---")
 else:
     st.warning("No data available for the selected filters.")
@@ -174,48 +150,66 @@ if not filtered_df.empty:
 
  st.header("Coral Restoration Records")
 
- coords = pd.merge(filtered_df[['landing_site','_gps_latitude']].groupby('landing_site').median(), filtered_df[['landing_site','_gps_longitude']].groupby('landing_site').median(), right_index=True, left_index=True)
- coords = pd.merge(coords, filtered_df[['landing_site','_gps_latitude']].groupby('landing_site').count(), right_index=True, left_index=True)
- coords = coords.rename(columns = {'_gps_latitude_x' : 'lat', '_gps_longitude' : 'lon', '_gps_latitude_y' : 'count'})
- coords['count'] = coords['count']*10 
+ # map shows the size of plot based on number of fragments in nursery or transplated
 
- coords = coords.dropna().reset_index()
+ coords = pd.merge(coords, filtered_df.groupby(['site_name'])['total_fragments_in_nursery_to_date'].max().reset_index())
+ coords = pd.merge(coords, filtered_df.groupby(['site_name'])['total_fragments_transplanted_to_date'].max().reset_index())
+ coords = pd.merge(filtered_df[['site_name','site_type']], coords).drop_duplicates()
  
- # 2. Define the Dot Layer
- dots_layer = pdk.Layer(
+ # 2. Define the Dot Layers
+ 
+ dots_layer_nursery = pdk.Layer(
      'ScatterplotLayer',
-     coords.dropna(),
-     get_position='[lon, lat]',
-     get_radius='count',
-     get_color='[200, 30, 0, 160]',
+     data = coords[coords['site_type'] == 'nursery'].dropna(),
+     get_position = '[longitude, latitude]',
+     get_radius = 'total_fragments_in_nursery_to_date',
+     radius_scale=2,      # Multiplies the base radius by 2 (effectively 100 meters)
+     radius_min_pixels=2, # Prevents points from disappearing when zoomed far out
+     radius_max_pixels=60,#     #radius_units="pixels",
+     get_fill_color = '[200, 30, 100, 160]',
  )
+
+ dots_layer_transplanting = pdk.Layer(
+     'ScatterplotLayer',
+     data = coords[coords['site_type'] == 'transplanting'].dropna(),
+     get_position = '[longitude, latitude]',
+     get_radius = 'total_fragments_transplanted_to_date',
+     radius_scale=2,      # Multiplies the base radius by 2 (effectively 100 meters)
+     radius_min_pixels=2, # Prevents points from disappearing when zoomed far out
+     radius_max_pixels=60,#     #radius_units="pixels",
+     get_color = '[200, 30, 60, 120]',
+ )
+ 
  
  # 3. Define the Label Layer
  labels_layer = pdk.Layer(
      "TextLayer",
-     coords.dropna(),
-     get_position='[lon, lat]',
-     get_text='landing_site',
-     get_size=12,
-     get_color=[1, 1, 1],
+     data = coords.dropna(),
+     get_position='[longitude, latitude]',
+     get_text='site_name',
+     get_size=10,
+     size_units="'pixels'",
+     get_color=[0, 0, 0, 255],
      get_alignment_baseline="'bottom'",
+     get_text_anchor="'middle'",
  )
  
  # 4. Render the Map
  st.pydeck_chart(pdk.Deck(
      map_style='light',
-     layers=[dots_layer, labels_layer],
-     #layers=[dots_layer],
+     layers=[dots_layer_nursery, dots_layer_transplanting, labels_layer],
+     #layers=[dots_layer_nursery],
      initial_view_state=pdk.ViewState(
-         latitude=np.mean(coords.lat),
-         longitude=np.mean(coords.lon),
+         latitude=np.mean(coords.latitude),
+         longitude=np.mean(coords.longitude),
          zoom=7,
          pitch=0,
      ),
  ))
 
 
-
+ import sys
+ sys.exit()
 
  # 1. Catch Weight Over Time (Line Chart)
  con0 = st.container(border=True)
