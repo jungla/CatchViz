@@ -1,0 +1,7 @@
+streamlit
+plotly
+openpyxl
+altair
+memory_profiler
+PyGithub
+pydeck
