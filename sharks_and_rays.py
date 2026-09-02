@@ -100,9 +100,9 @@ def read_data(filename):
  return df
 
 
-#df = read_data('SHARKS_kobo_data.csv') # parquet loses some data
+df = read_data('SHARKS_kobo_data.csv') # parquet loses some data
 
-df = pd.read_csv('SHARK_kobo_data.csv', low_memory=False) # parquet loses some data
+#df = pd.read_csv('SHARK_kobo_data.csv', low_memory=True) # parquet loses some data
 df = pd.merge(df, df_IUCN, left_on='Scientific_name', right_on = 'Scientific_name', how='left')
 
 df['today'] = pd.to_datetime(df['today'],format='mixed')
