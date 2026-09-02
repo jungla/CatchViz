@@ -12,7 +12,7 @@ def read_data(filename):
  df = pd.read_csv(filename, low_memory=True) # parquet loses some data
  return df
 
-df = read_data('CATCH_kobo_data.csv') # parquet loses some data
+#df = read_data('CATCH_kobo_data.csv') # parquet loses some data
 
 # --- Sidebar Filters ---
 
