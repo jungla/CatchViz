@@ -1,0 +1,19 @@
+/* Global Typography and Header Styles */
+.h1-custom {
+    font-family: 'Futura', serif, sans-serif;
+    font-size: 30px !important;
+    font-weight: bold;
+    margin-bottom: 0px !important;
+}
+
+.h2-custom {
+    font-family: 'Futura', serif, sans-serif;
+    font-size: 48px !important;
+    color: #94a3b8;
+    font-weight: bold;
+    margin-top: 0px !important;
+}
+
+[data-testid="stSidebarNavItems"] ul {
+    font-size: 18px !important;
+}

@@ -1,8 +1,0 @@
-[server]
-#address = "44.229.227.142"
-#port = 10000
-
-[theme]
-font = "serif"
-headingFont = "Futura"
-codeFont = "monospace"

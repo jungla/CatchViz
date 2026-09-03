@@ -1,0 +1,84 @@
+/* Card UI for Protected Species */
+.main {
+    background-color: #f8fafc;
+}
+
+.stMetric {
+    background-color: white;
+    padding: 15px;
+    border-radius: 10px;
+    border: 1px solid #e2e8f0;
+    box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+}
+
+.species-card {
+    background-color: white;
+    padding: 0px;
+    border-radius: 12px;
+    border: 1px solid #e2e8f0;
+    margin-bottom: 20px;
+    transition: all 0.3s;
+    overflow: hidden;
+}
+
+.species-card:hover {
+    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+    transform: translateY(-4px);
+}
+
+.card-img {
+    width: 100%;
+    height: 150px;
+    object-fit: cover;
+}
+
+.card-content {
+    padding: 15px;
+}
+
+.badge {
+    padding: 2px 8px;
+    border-radius: 4px;
+    font-size: 10px;
+    font-weight: bold;
+    text-transform: uppercase;
+    display: inline-block;
+    margin-bottom: 8px;
+}
+
+.badge-research {
+    background-color: lavender;
+    color: gray;
+}
+
+.badge-consumption {
+    background-color: #fee2e2;
+    color: #ef4444;
+}
+
+.badge-release {
+    background-color: red;
+    color: yellow;
+}
+
+.taxa-group {
+    color: #3b82f6;
+    font-size: 10px;
+    font-weight: bold;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    margin-bottom: 4px;
+}
+
+.species-name {
+    font-size: 14px;
+    font-weight: bold;
+    color: #1e293b;
+    margin: 0;
+}
+
+.scientific-name {
+    font-size: 11px;
+    color: #94a3b8;
+    font-style: italic;
+}
