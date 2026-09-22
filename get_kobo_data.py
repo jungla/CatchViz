@@ -107,7 +107,7 @@ def merge_files(dataset):
 def process_data(dataset, fname): # Explicitly load 'catch_catch' sheet
 
  if dataset == 'CATCH':
-  columns_trip = ['today','deviceid','survey_real','survey_type','_gps_latitude','_gps_longitude','data_collector','landing_site','landings','trip_info','boat_type','other_boat','engine_yn','engine','gear_type','gear_type_other','fishing_ground_name','fishing_location','fishing_ground_type','fishing_ground_depth','fishing_duration','people','boats_landed','_id','_uuid','_submission_time','_tags','_index']
+  columns_trip = ['today','deviceid','survey_real','survey_type','_gps_latitude','_gps_longitude','data_collector','landing_site','landings','trip_info','boat_type','other_boat','engine_yn','engine','gear_type','gear_type_other','fishing_ground_name','fishing_location','fishing_ground_type','fishing_ground_depth','fishing_duration','people','boats_landed','_id','_uuid','_submission_time','_index']
   columns_catch = ['group_catch','species_catch','weight_catch','nb_buckets_catch','wgt_buckets_catch','nb_ind_catch','wgt_ind_catch','_submission__uuid']
 
   trips = pd.read_excel(fname, sheet_name=0, engine='openpyxl', usecols=columns_trip)
