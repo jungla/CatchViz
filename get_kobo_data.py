@@ -11,8 +11,8 @@ import numpy as np
 import datetime
 import glob
 
-#datasets = ['CATCH', 'SHARK', 'RESTORATION']
-datasets = ['RESTORATION']
+datasets = ['CATCH', 'SHARK', 'RESTORATION']
+#datasets = ['RESTORATION']
 #datasets = ['CATCH']
 
 API_TOKEN = os.environ['KOBO_TOKEN'] 
