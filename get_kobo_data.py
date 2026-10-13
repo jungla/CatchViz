@@ -11,8 +11,8 @@ import numpy as np
 import datetime
 import glob
 
-datasets = ['CATCH', 'SHARK', 'RESTORATION']
-#datasets = ['RESTORATION']
+#datasets = ['CATCH', 'SHARK', 'RESTORATION']
+datasets = ['RESTORATION']
 #datasets = ['CATCH']
 
 API_TOKEN = os.environ['KOBO_TOKEN'] 
@@ -174,9 +174,13 @@ def process_data(dataset, fname): # Explicitly load 'catch_catch' sheet
  elif dataset == 'RESTORATION':
   gc.collect()
 
-  restoration = pd.read_excel(fname, engine='openpyxl')
+  restoration = pd.read_excel(fname, engine='openpyxl', sheet_name=0)
+  fragments = pd.read_excel(fname, engine='openpyxl', sheet_name=1)
+  structures = pd.read_excel(fname, engine='openpyxl', sheet_name=2)
+  data = pd.merge(restoration, fragments, left_on='_index', right_on='_parent_index', how='left')
+  data = pd.merge(data, structures, left_on='_index_x', right_on='_parent_index', how='left') 
+  output = data
 
-  output = restoration
  return output
 
 def upload_to_github(file_path, repo_name, token):
