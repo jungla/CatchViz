@@ -1,0 +1,37 @@
+data:
+  raw_dir: "/Users/jeanmensa/WCS/Data/SharksRays/Photos_Kobo_SHARC"
+  img_size: 240
+  num_workers: 4
+  val_ratio: 0.25
+  random_seed: 42
+  max_images_per_species: 1000  # Cap pictures per species to distribute training effort evenly
+  min_images_per_species: 100    # Set > 0 to oversample rare species (0 = keep real photos)
+  resample_each_epoch: true    # Rotates different photos from large pools each epoch while keeping epochs fast
+
+model:
+  backbone: "convnext_tiny"   # convnext_tiny | convnext_small | efficientnet_v2_s | mobilenet_v3_large
+  num_classes: 11
+  pretrained: true
+  embedding_dim: 512          # 512 matches ConvNeXt/EfficientNetV2 wider features
+  dropout: 0.3
+
+training:
+  epochs: 15
+  warmup_epochs: 1            # Frozen-backbone warmup before full fine-tuning
+  batch_size: 32
+  lr: 2.0e-4
+  min_lr: 1.0e-6
+  weight_decay: 3.0e-4
+  label_smoothing: 0.1
+  patience: 10
+  use_mps: true  # Apple Silicon acceleration
+
+inference:
+  confidence_threshold_high: 0.80
+  confidence_threshold_mod: 0.60
+  min_margin: 0.20
+
+export:
+  onnx_path: "models/elasmobranch_mobilenet.onnx"
+  tflite_path: "models/elasmobranch_mobilenet.tflite"
+  coreml_path: "models/elasmobranch_mobilenet.mlpackage"

@@ -1,0 +1,12 @@
+#!/bin/bash
+# Native macOS App Launcher for Elasmobranch Species Identification
+# Bypasses macOS 15.06 Tcl/Tk version check by launching the modern Streamlit web/desktop interface
+
+DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )/../../.." && pwd )"
+cd "$DIR"
+
+# Launch Streamlit app and open automatically in user's browser
+exec "$DIR/.venv/bin/streamlit" run "$DIR/inference/streamlit_app.py" \
+    --server.headless=false \
+    --browser.serverAddress="localhost" \
+    --server.port=8501

@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Elasmobranch Species Identification - Field Tool</title>
+    <script src="https://cdn.jsdelivr.net/npm/onnxruntime-web/dist/ort.min.js"></script>
+    <style>
+        :root {
+            --primary: #1a365d;
+            --accent: #2b6cb0;
+            --bg: #f7fafc;
+            --card-bg: #ffffff;
+            --text-dark: #2d3748;
+            --text-muted: #718096;
+            --success: #276749;
+            --warning: #c05621;
+            --border: #e2e8f0;
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
+        body { background: var(--bg); color: var(--text-dark); padding: 20px; }
+        .container { max-width: 900px; margin: 0 auto; background: var(--card-bg); border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.08); overflow: hidden; }
+        
+        header { background: var(--primary); color: white; padding: 24px 30px; text-align: center; }
+        header h1 { font-size: 24px; margin-bottom: 6px; }
+        header p { color: #cbd5e0; font-size: 14px; }
+
+        .content { padding: 30px; }
+        .drop-zone { border: 2px dashed var(--accent); border-radius: 8px; padding: 30px; text-align: center; cursor: pointer; transition: 0.2s; background: #ebf8ff; }
+        .drop-zone:hover { background: #e2e8f0; }
+        .preview-grid { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 15px; }
+        .preview-thumb { width: 90px; height: 90px; object-fit: cover; border-radius: 6px; border: 1px solid var(--border); }
+
+        .btn-run { display: block; width: 100%; margin-top: 20px; padding: 14px; background: #38a169; color: white; border: none; border-radius: 6px; font-size: 16px; font-weight: bold; cursor: pointer; }
+        .btn-run:hover { background: #2f855a; }
+
+        .result-box { margin-top: 25px; padding: 20px; border-radius: 8px; background: #edf2f7; display: none; }
+        .result-title { font-size: 20px; font-weight: bold; color: var(--primary); margin-bottom: 8px; }
+        .confidence-tier { display: inline-block; padding: 4px 10px; border-radius: 4px; font-weight: bold; font-size: 13px; margin-bottom: 15px; }
+        .tier-high { background: #c6f6d5; color: var(--success); }
+        .tier-mod { background: #feebc8; color: var(--warning); }
+        .tier-low { background: #fed7d7; color: #9b2c2c; }
+
+        .candidate-row { margin: 8px 0; font-size: 14px; }
+        .bar-outer { width: 100%; height: 8px; background: #e2e8f0; border-radius: 4px; overflow: hidden; margin-top: 4px; }
+        .bar-inner { height: 100%; background: var(--accent); }
+
+        .guidance-box { margin-top: 20px; padding: 15px; background: #fffaf0; border-left: 4px solid var(--warning); border-radius: 4px; }
+        .guidance-box h3 { font-size: 15px; color: var(--warning); margin-bottom: 6px; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>🦈 Elasmobranch Species Identification</h1>
+            <p>Standalone Offline Edge Intelligence for Fisheries & Conservation</p>
+        </header>
+
+        <div class="content">
+            <div class="drop-zone" id="dropZone" onclick="document.getElementById('fileInput').click()">
+                <p><strong>Click or Drag & Drop specimen photos here</strong></p>
+                <p style="font-size: 13px; color: var(--text-muted); margin-top: 4px;">Supports multiple angles of the same individual (dorsal, ventral, head, tail)</p>
+                <input type="file" id="fileInput" multiple accept="image/*" style="display: none;">
+            </div>
+
+            <div class="preview-grid" id="previewGrid"></div>
+            <button class="btn-run" id="btnRun" style="display: none;" onclick="runInference()">🔍 Identify Species</button>
+
+            <div class="result-box" id="resultBox">
+                <div class="result-title" id="predSpecies">--</div>
+                <div class="confidence-tier" id="predTier">--</div>
+                <div id="candidateList"></div>
+
+                <div class="guidance-box" id="guidanceBox" style="display: none;">
+                    <h3>📋 Diagnostic Key & Recommended Angles</h3>
+                    <p id="guidanceText" style="font-size: 14px; line-height: 1.5;"></p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const fileInput = document.getElementById('fileInput');
+        const previewGrid = document.getElementById('previewGrid');
+        const btnRun = document.getElementById('btnRun');
+        const resultBox = document.getElementById('resultBox');
+        let selectedFiles = [];
+
+        fileInput.addEventListener('change', (e) => {
+            selectedFiles = Array.from(e.target.files);
+            renderPreviews();
+        });
+
+        function renderPreviews() {
+            previewGrid.innerHTML = '';
+            if (selectedFiles.length > 0) {
+                btnRun.style.display = 'block';
+                selectedFiles.forEach(file => {
+                    const img = document.createElement('img');
+                    img.src = URL.createObjectURL(file);
+                    img.className = 'preview-thumb';
+                    previewGrid.appendChild(img);
+                });
+            } else {
+                btnRun.style.display = 'none';
+            }
+        }
+
+        async function runInference() {
+            alert("To run client-side in the browser: Serve this folder or run the Python Desktop App (inference/desktop_app.py) for full native desktop acceleration!");
+        }
+    </script>
+</body>
+</html>

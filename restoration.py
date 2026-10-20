@@ -53,6 +53,9 @@ if df.empty:
 min_date = df['date'].min() #date(2019,1,1)
 max_date = df['date'].max()
 
+df_date_range = pd.DataFrame({'date' : pd.date_range(start=min_date, end=max_date, freq='D')})
+
+
 date_range = st.sidebar.date_input(
     "Select today Range:",
     value=(min_date, max_date),
@@ -242,20 +245,51 @@ if not filtered_df.empty:
 
 
 
- con0 = st.container(border=True)
 
- # Landings by Boat Type
+ # Aactivity Days by Site - all activities
+ 
+ con0 = st.container(border=True)
  con0.subheader("Activity by Site")
  activity_site = filtered_df[['_uuid','project_site','datetime']].drop_duplicates().groupby('project_site').resample('W', on='datetime').count().reset_index()
 
 #  boat_type = filtered_df.groupby('boat_type').count().sort_values(by='_uuid').reset_index()
 
  fig_activity = alt.Chart(activity_site).mark_bar(size=20).encode(
-  x=alt.X('datetime', title='Time', sort=None),
-  y=alt.Y('_uuid', title='Number of Records'),
+  x=alt.X('datetime', title='Time [week]', sort=None),
+  y=alt.Y('_uuid', title='Number of Days in the Field'),
   color='project_site'
   )
  con0.altair_chart(fig_activity, width='stretch')
+
+# Activity by site in time. Activities are: 'select_activity/fragmentation', 'select_activity/transplantation', 'select_activity/monitoring', 'select_activity/cleaning_and_maintaining' 
+
+# for 'select_activity/fragmentation'
+
+ 
+
+ for activity in ['select_activity/fragmentation', 'select_activity/transplantation', 'select_activity/monitoring', 'select_activity/cleaning_and_maintaining']:
+
+  title = activity.split('/')[1].title()
+  conN = st.container(border=True)
+  conN.subheader(title + " by Site")
+ 
+  activity_df = filtered_df[filtered_df[activity] == 1]
+  activity_site = activity_df[['_uuid','project_site','datetime']].drop_duplicates().groupby('project_site').resample('W', on='datetime').count().reset_index()
+
+  activity_site = pd.merge(activity_site, df_date_range, left_on='datetime', right_on='date', how='right')
+  activity_site['_uuid'] = activity_site['_uuid'].fillna(0)
+
+  fig_act = alt.Chart(activity_site).mark_bar(size=20).encode(
+   x=alt.X('date', title='Time [week]'),  
+   y=alt.Y('_uuid', title='Number of Days doing '+title),       
+   color=alt.Color('project_site:N',
+        scale=alt.Scale(
+            domain=list(activity_site['project_site'].unique().dropna()),  # Only maps colors to these real categories
+        )
+    )
+   )
+  conN.altair_chart(fig_act, width='stretch')
+
 
 
 #  con2 = col_viz1.container(border=True)
