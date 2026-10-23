@@ -23,6 +23,12 @@ shark_page = st.Page("sharks_and_rays.py", title="Sharks and Rays Landings", ico
 id_shark_page = st.Page("elasmobranch_id/inference/identify_sharks_and_rays.py", title="Identify Shark and Ray Species", icon="🔍")
 protected_species_page = st.Page("protected_species.py", title="Protected Species List", icon="🐋")
 restoration_page = st.Page("restoration.py", title="Coral Reef Restoration", icon="🪸")
+program_geographies_page = st.Page("program_geographies.py", title="Program Geographies", icon="🌍")
 
-pg = st.navigation([bony_page, shark_page, id_shark_page, protected_species_page, restoration_page], position="sidebar", expanded=True)
+
+pg = st.navigation({
+    "Program Management": [program_geographies_page],
+    "Field Activities": [restoration_page, bony_page, shark_page ],
+    "Tools": [protected_species_page, id_shark_page]
+}, position="sidebar", expanded=True)
 pg.run()
