@@ -6,3 +6,4 @@ memory_profiler
 PyGithub
 pydeck
 onnxruntime
+folium
