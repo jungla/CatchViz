@@ -9,6 +9,9 @@ Features:
 - Checkpoint and metadata serialization for standalone export.
 """
 
+import multiprocessing
+multiprocessing.set_start_method('forkserver', force=True)
+
 import os
 from pathlib import Path
 os.environ["TORCH_HOME"] = str(Path(__file__).parent.parent / ".torch_cache")
@@ -176,14 +179,35 @@ def train_pipeline(config_path: str = "configs/default_config.yaml"):
     else:
         print(f"\nTraining set: {len(train_df)} images (unrestricted, all available images)")
 
-    # 4. DataLoaders
+    # 4. DataLoaders (optimized for multi-core Apple Silicon / GPU I/O)
     img_size = cfg["data"]["img_size"]
     train_dataset = ElasmobranchDataset(train_df, transform=get_transforms(img_size, is_train=True))
     val_dataset = ElasmobranchDataset(val_df, transform=get_transforms(img_size, is_train=False))
 
     batch_size = cfg["training"]["batch_size"]
-    train_loader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True, num_workers=0)
-    val_loader = DataLoader(val_dataset, batch_size=batch_size, shuffle=False, num_workers=0)
+    num_workers = cfg["data"].get("num_workers", 4)
+    # MPS shares unified memory with CPU, so pin_memory is only needed for NVIDIA CUDA
+    pin_memory = torch.cuda.is_available()
+
+    # On macOS, persistent_workers can retain POSIX semaphores at process exit
+    persistent_workers = (num_workers > 0 and sys.platform != "darwin")
+
+    train_loader = DataLoader(
+        train_dataset,
+        batch_size=batch_size,
+        shuffle=True,
+        num_workers=num_workers,
+        pin_memory=pin_memory,
+        persistent_workers=persistent_workers
+    )
+    val_loader = DataLoader(
+        val_dataset,
+        batch_size=batch_size,
+        shuffle=False,
+        num_workers=num_workers,
+        pin_memory=pin_memory,
+        persistent_workers=persistent_workers
+    )
 
     # 5. Compute class weights for balanced data
     class_counts = train_df["label"].value_counts().sort_index()
@@ -312,6 +336,13 @@ def train_pipeline(config_path: str = "configs/default_config.yaml"):
     with open("models/metadata.json", "w") as f:
         json.dump(meta, f, indent=2)
     print("Saved metadata to: models/metadata.json")
+
+    # Clean up DataLoader worker processes and semaphores cleanly before shutdown
+    try:
+        del train_loader
+        del val_loader
+    except Exception:
+        pass
 
 if __name__ == "__main__":
     train_pipeline()

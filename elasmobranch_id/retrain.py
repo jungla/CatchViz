@@ -5,6 +5,9 @@ Usage:
   .venv/bin/python retrain.py
 """
 
+import multiprocessing
+multiprocessing.set_start_method('forkserver', force=True)
+
 import subprocess
 import sys
 import time

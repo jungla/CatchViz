@@ -39,36 +39,58 @@ def clean_species_name(name: str) -> str:
         return f"{parts[0].capitalize()} {parts[1].lower()}"
     return name.capitalize()
 
-def parse_dataset_directory(data_dir: str) -> pd.DataFrame:
+def parse_dataset_directory(
+    data_dir: str,
+    cache_path: Optional[str] = "models/dataset_index.parquet"
+) -> pd.DataFrame:
     """
     Scan folder and extract metadata DataFrame from filenames.
+    Optimized with os.scandir and parquet caching for 100k+ image datasets.
     Filename format: <UUID>_<Species Name>_<PhotoIndex>.jpeg
     """
     path = Path(data_dir)
     if not path.exists():
         raise FileNotFoundError(f"Directory not found: {data_dir}")
 
+    # Check for cached index to avoid re-scanning 100k files on every startup
+    if cache_path:
+        cache_file = Path(cache_path)
+        if cache_file.exists():
+            try:
+                # If cache is newer than directory modification time
+                dir_mtime = path.stat().st_mtime
+                cache_mtime = cache_file.stat().st_mtime
+                if cache_mtime >= dir_mtime:
+                    print(f"Loading cached dataset index from {cache_path}...")
+                    df = pd.read_parquet(cache_path)
+                    if not df.empty and "species" in df.columns:
+                        return df
+            except Exception as e:
+                print(f"Cache read error ({e}), re-scanning directory...")
+
     # Regex pattern: uuid _ species name _ photo index . ext
     pattern = re.compile(r"^([a-f0-9\-]+)_(.+)_(\d+)\.([a-zA-Z0-9]+)$", re.IGNORECASE)
 
     records = []
-    for f in sorted(path.iterdir()):
-        if not f.is_file() or f.name.startswith('.'):
-            continue
-        m = pattern.match(f.name)
-        if m:
-            uuid_str, raw_species, photo_idx, ext = m.groups()
-            species = clean_species_name(raw_species)
-            idx = int(photo_idx)
-            records.append({
-                "filename": f.name,
-                "filepath": str(f.resolve()),
-                "uuid": uuid_str,
-                "species": species,
-                "photo_index": idx,
-                "angle_label": PHOTO_INDEX_LABELS.get(idx, f"angle_{idx}"),
-                "extension": ext.lower()
-            })
+    # Use os.scandir for high-speed POSIX directory traversal (avoids extra stat calls on 100k files)
+    with os.scandir(data_dir) as entries:
+        for entry in entries:
+            if not entry.is_file() or entry.name.startswith('.'):
+                continue
+            m = pattern.match(entry.name)
+            if m:
+                uuid_str, raw_species, photo_idx, ext = m.groups()
+                species = clean_species_name(raw_species)
+                idx = int(photo_idx)
+                records.append({
+                    "filename": entry.name,
+                    "filepath": entry.path,
+                    "uuid": uuid_str,
+                    "species": species,
+                    "photo_index": idx,
+                    "angle_label": PHOTO_INDEX_LABELS.get(idx, f"angle_{idx}"),
+                    "extension": ext.lower()
+                })
 
     df = pd.DataFrame(records)
     if df.empty:
@@ -78,6 +100,16 @@ def parse_dataset_directory(data_dir: str) -> pd.DataFrame:
     unique_species = sorted(df["species"].unique())
     species_to_idx = {sp: i for i, sp in enumerate(unique_species)}
     df["label"] = df["species"].map(species_to_idx)
+
+    # Save cache for next run
+    if cache_path:
+        try:
+            cache_file = Path(cache_path)
+            cache_file.parent.mkdir(parents=True, exist_ok=True)
+            df.to_parquet(cache_path, index=False)
+            print(f"Saved dataset index cache ({len(df)} images) to: {cache_path}")
+        except Exception as e:
+            print(f"Warning: Could not save dataset cache ({e})")
 
     return df
 

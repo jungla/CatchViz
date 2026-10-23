@@ -1,0 +1,19 @@
+services:
+  - type: web
+    name: kobo-shark-id-webhook
+    runtime: docker
+    dockerfilePath: kobo_service/Dockerfile
+    plan: starter
+    envVars:
+      - key: KOBO_API_TOKEN
+        sync: false
+      - key: KOBO_SERVER_URL
+        value: https://kf.kobotoolbox.org
+      - key: CONFIDENCE_THRESHOLD_HIGH
+        value: "0.80"
+      - key: CONFIDENCE_THRESHOLD_MOD
+        value: "0.60"
+      - key: MODEL_PATH
+        value: models/elasmobranch_mobilenet.onnx
+      - key: META_PATH
+        value: models/metadata.json

@@ -1,23 +1,23 @@
 data:
   raw_dir: "/Users/jeanmensa/WCS/Data/SharksRays/Photos_Kobo_SHARC"
-  img_size: 240
+  img_size: 256                # Reduced from 384: ~2.5x faster training & memory throughput
   num_workers: 4
-  val_ratio: 0.25
+  val_ratio: 0.15              # 15% on 100k = ~15k images (statistically robust, much faster evaluation)
   random_seed: 42
-  max_images_per_species: 1000  # Cap pictures per species to distribute training effort evenly
-  min_images_per_species: 100    # Set > 0 to oversample rare species (0 = keep real photos)
+  max_images_per_species: 1000 # Cap pictures per species to distribute training effort evenly
+  min_images_per_species: 100   # Set > 0 to oversample rare species (keeps minority classes well-represented)
   resample_each_epoch: true    # Rotates different photos from large pools each epoch while keeping epochs fast
 
 model:
-  backbone: "convnext_tiny"   # convnext_tiny | convnext_small | efficientnet_v2_s | mobilenet_v3_large
+  backbone: "convnext_tiny"    # convnext_tiny | convnext_small | efficientnet_v2_s | mobilenet_v3_large
   num_classes: 11
   pretrained: true
-  embedding_dim: 512          # 512 matches ConvNeXt/EfficientNetV2 wider features
+  embedding_dim: 512           # 512 matches ConvNeXt/EfficientNetV2 wider features
   dropout: 0.3
 
 training:
-  epochs: 15
-  warmup_epochs: 1            # Frozen-backbone warmup before full fine-tuning
+  epochs: 25                   # 25 epochs on 100k images provides ample gradient updates
+  warmup_epochs: 1             # Frozen-backbone warmup before full fine-tuning
   batch_size: 32
   lr: 2.0e-4
   min_lr: 1.0e-6
