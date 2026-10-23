@@ -8,3 +8,4 @@ pydeck
 onnxruntime
 folium
 geopandas
+streamlit_folium
