@@ -153,8 +153,8 @@ if grouped_interventions is not None and cma_spatial_gdf is not None and mpa_spa
             "weight": 3,
             "fillOpacity": 0.6
         },
-        tooltip=folium.GeoJsonTooltip(fields=["name"], aliases=["CFMA:"]),
-        name="Community Forest Management Areas (CFMA)"
+        tooltip=folium.GeoJsonTooltip(fields=["name"], aliases=["CMA:"]),
+        name="Community Managed Area (CMA)"
     ).add_to(m)
 
     folium.LayerControl().add_to(m)
@@ -189,7 +189,7 @@ if grouped_interventions is not None and cma_spatial_gdf is not None and mpa_spa
     map_state = st.session_state.get("wcs_map", {})
     
     # Determine what text and color to display in the info box
-    info_text = "👆 <b>Click on any Community Forest Management Area (CFMA) on the map</b> to view its specific active interventions here."
+    info_text = "👆 <b>Click on any CMA on the map</b> to view its specific active interventions here."
     bg_color = "#e9ecef" # Default gray-ish background
     
     if map_state and map_state.get("last_active_drawing"):
