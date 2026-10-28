@@ -28,7 +28,7 @@ st.caption("Live, synchronized spatial distribution of regional development proj
 # 1. Configuration 
 GOOGLE_SHEET_URL = "https://docs.google.com/spreadsheets/d/1XsjrpSbwfzijQiE09-mNfKnBVZ_pe89sr8GF6GTK07Q/export?format=csv&gid=1881832883"
 
-SHAPEFILE_CMA_PATH = "shapefiles/WCS_Project_Areas.gpkg"
+SHAPEFILE_CMA_PATH = "shapefiles/WCS_Project_Areas_v2.gpkg"
 SHAPEFILE_MPA_PATH = "shapefiles/MPAs_TZ_ZNZ.gpkg"
 
 # Updated colors to be highly distinguishable
@@ -170,57 +170,64 @@ if grouped_interventions is not None and cma_spatial_gdf is not None and mpa_spa
 
     folium.LayerControl().add_to(m)
 
-    # 7. Render text labels and contextual indicator blocks
+    # 7. Render combined text labels and contextual indicator blocks
     for _, row in merged_gdf.iterrows():
         
-        # --- NEW FIX: Skip if geometry is missing or completely empty ---
+        # Skip if geometry is missing or completely empty
         if pd.isna(row.geometry) or row.geometry.is_empty:
             continue
             
-        # Place permanent CMA text label in the center (centroid) of the polygon
+        # Get centroid location for the marker
         c_lat = row.geometry.centroid.y
         c_lon = row.geometry.centroid.x
         cma_name = str(row.get('name', ''))
         
+        # Build the badge squares HTML
+        v_interventions = row["Categories"]
+        badge_html = ""
+        
+        if v_interventions and len(v_interventions) > 0:
+            for item in v_interventions:
+                color = INITIATIVE_COLORS.get(item, "#7f7f7f")
+                badge_html += f'<div style="width: 14px; height: 14px; background-color: {color}; border: 1.5px solid #ffffff; border-radius: 3px; display: inline-block; margin-right: 3px; box-shadow: 0px 1px 3px rgba(0,0,0,0.3);" title="{item}"></div>'
+        
+        # Combine the label and the badges into a single stacked column (flex-direction: column)
+        combined_marker_html = f"""
+        <div style="
+            display: flex; 
+            flex-direction: column; 
+            align-items: center; 
+            transform: translate(-50%, -50%);
+        ">
+        """
+        
+        # Add the CMA Label (if it exists)
         if cma_name and cma_name != "nan":
-            # HTML Div for the text label with a subtle white halo for readability
-            label_html = f"""
+            combined_marker_html += f"""
             <div style="
                 font-size: 11px; 
                 font-weight: 700; 
                 color: #212529; 
                 text-shadow: 1px 1px 2px #fff, -1px -1px 2px #fff, 1px -1px 2px #fff, -1px 1px 2px #fff; 
                 white-space: nowrap; 
-                text-align: center; 
-                transform: translate(-50%, -50%);
+                margin-bottom: 2px;
             ">{cma_name}</div>
             """
+            
+        # Add the Badges row directly underneath (if they exist)
+        if badge_html:
+            combined_marker_html += f"""
+            <div style="display: flex; white-space: nowrap; padding: 2px;">{badge_html}</div>
+            """
+            
+        combined_marker_html += "</div>"
+        
+        # Plot the single combined marker at the center of the shape
+        if (cma_name and cma_name != "nan") or badge_html:
             folium.Marker(
                 location=[c_lat, c_lon],
-                icon=folium.DivIcon(html=label_html)
+                icon=folium.DivIcon(html=combined_marker_html, icon_anchor=(0, 0))
             ).add_to(m)
-                
-        # Existing logic for colored category squares at the bounding box
-        v_interventions = row["Categories"]
-        if not v_interventions or len(v_interventions) == 0:
-            continue
-            
-        minx, miny, maxx, maxy = row.geometry.bounds
-        anchor_lat = maxy  
-        anchor_lon = minx  
-        
-        badge_html = ""
-        for item in v_interventions:
-            color = INITIATIVE_COLORS.get(item, "#7f7f7f")
-            # Collapsed HTML string to avoid markdown parsing errors
-            badge_html += f'<div style="width: 14px; height: 14px; background-color: {color}; border: 1.5px solid #ffffff; border-radius: 3px; display: inline-block; margin-right: 3px; box-shadow: 0px 1px 3px rgba(0,0,0,0.3);" title="{item}"></div>'
-            
-        container_html = f'<div style="display: flex; white-space: nowrap; padding: 2px;">{badge_html}</div>'
-        
-        folium.Marker(
-            location=[anchor_lat, anchor_lon],
-            icon=folium.DivIcon(html=container_html, icon_size=(100, 20), icon_anchor=(0, 0))
-        ).add_to(m)
 
     # 8. Render App Interface
     
