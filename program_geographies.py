@@ -67,23 +67,28 @@ def fetch_live_sheet(url):
             # 1. Get UNIQUE categories for the colored squares on the map
             unique_cats = [c for c in g['General Description'].unique() if c and c.lower() != 'nan']
             
-            # 2. Build the detailed intervention text for the top panel
+            # 2. Build the detailed intervention text for the top panel, INCLUDING the color box
             panel_lines = []
             for cat in unique_cats:
+                color = INITIATIVE_COLORS.get(cat, "#7f7f7f")
+                
+                # HTML for the small colored box next to the text
+                color_box_html = f'<div style="display:inline-block; width:12px; height:12px; background-color:{color}; border-radius:2px; margin-right:6px; border:1px solid #666; vertical-align:middle;"></div>'
+                
                 # Find all specific interventions belonging to this category
                 interventions = [
                     i for i in g[g['General Description'] == cat]['Specific Intervention'].unique() 
                     if i and i.lower() != 'nan'
                 ]
                 if interventions:
-                    # Format as: "Category: Intervention 1, Intervention 2"
-                    panel_lines.append(f"<b>{cat}:</b> {', '.join(interventions)}")
+                    # Format as: "[Box] Category: Intervention 1, Intervention 2"
+                    panel_lines.append(f"<div style='margin-bottom:4px;'>{color_box_html}<b>{cat}:</b> {', '.join(interventions)}</div>")
                 else:
-                    panel_lines.append(f"<b>{cat}</b>")
+                    panel_lines.append(f"<div style='margin-bottom:4px;'>{color_box_html}<b>{cat}</b></div>")
                     
             return pd.Series({
                 'Categories': unique_cats,
-                'ActivitiesHTML': "<br>".join(panel_lines) # Multi-line string for the UI panel
+                'ActivitiesHTML': "".join(panel_lines) # Multi-line string for the UI panel
             })
             
         return df.groupby('CMA/CMG').apply(process_group).reset_index()
@@ -122,7 +127,7 @@ if grouped_interventions is not None and cma_spatial_gdf is not None and mpa_spa
     # 6. Center map canvas
     center_lat = merged_gdf.geometry.centroid.y.mean()
     center_lon = merged_gdf.geometry.centroid.x.mean()
-    m = folium.Map(location=[center_lat, center_lon], zoom_start=11, tiles="OpenStreetMap")
+    m = folium.Map(location=[center_lat, center_lon], zoom_start=9, tiles="OpenStreetMap")
 
     # Draw MPA Background Layer FIRST
     folium.GeoJson(
@@ -200,7 +205,7 @@ if grouped_interventions is not None and cma_spatial_gdf is not None and mpa_spa
         if "ActivitiesHTML" in clicked_props:
             activities = clicked_props["ActivitiesHTML"]
             if activities:
-                info_text = f"<b>📍 {area_name} Interventions:</b><br>{activities}"
+                info_text = f"<div style='margin-bottom:8px; font-size:16px;'><b>📍 {area_name} Interventions:</b></div>{activities}"
                 bg_color = "#d4edda" # Success green
             else:
                 info_text = f"<b>📍 {area_name}:</b> No active interventions registered at this time."
@@ -213,7 +218,7 @@ if grouped_interventions is not None and cma_spatial_gdf is not None and mpa_spa
     st.markdown(
         f"""
         <div style="min-height: 55px; padding: 15px; border-radius: 8px; background-color: {bg_color}; margin-bottom: 15px; border: 1px solid #ced4da; display: flex; flex-direction: column; justify-content: center;">
-            <span style="font-size: 16px; color: #212529; margin: 0; line-height: 1.6;">{info_text}</span>
+            <span style="font-size: 15px; color: #212529; margin: 0; line-height: 1.4;">{info_text}</span>
         </div>
         """, 
         unsafe_allow_html=True
@@ -221,22 +226,6 @@ if grouped_interventions is not None and cma_spatial_gdf is not None and mpa_spa
 
     # Render the map 
     st_folium(m, width="100%", height=650, key="wcs_map") 
-    
-    # --- NEW RESPONSIVE LEGEND (FIXED HTML FORMATTING) ---
-    st.markdown("### 🎨 Legend Key")
-    
-    # Build a responsive flexbox layout for the legend, formatted cleanly on single lines
-    legend_html = '<div style="display: flex; flex-wrap: wrap; gap: 24px; padding: 10px 0;">'
-    for name, color in INITIATIVE_COLORS.items():
-        legend_html += (
-            f'<div style="display: flex; align-items: center; gap: 10px;">'
-            f'<div style="width: 24px; height: 24px; background-color: {color}; border-radius: 4px; border: 1px solid #999; box-shadow: 1px 1px 3px rgba(0,0,0,0.2);"></div>'
-            f'<span style="font-size: 16px; font-weight: 500; color: #212529;">{name}</span>'
-            f'</div>'
-        )
-    legend_html += '</div>'
-    
-    st.markdown(legend_html, unsafe_allow_html=True)
             
 else:
     st.info("Configuration check: Awaiting data from both web source connection and filesystem path frameworks.")
