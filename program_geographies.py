@@ -124,9 +124,16 @@ if grouped_interventions is not None and cma_spatial_gdf is not None and mpa_spa
     merged_gdf['Categories'] = merged_gdf['Categories'].apply(lambda x: x if isinstance(x, list) else [])
     merged_gdf['ActivitiesHTML'] = merged_gdf['ActivitiesHTML'].fillna("")
 
-    # 6. Center map canvas
-    center_lat = merged_gdf.geometry.centroid.y.mean()
-    center_lon = merged_gdf.geometry.centroid.x.mean()
+    # 6. Center map canvas safely (ignoring empty geometries)
+    valid_geoms = merged_gdf[merged_gdf.geometry.notna() & ~merged_gdf.geometry.is_empty]
+    
+    if not valid_geoms.empty:
+        center_lat = valid_geoms.geometry.centroid.y.mean()
+        center_lon = valid_geoms.geometry.centroid.x.mean()
+    else:
+        # Fallback if no valid geometry is found
+        center_lat, center_lon = -6.0, 39.0 
+        
     m = folium.Map(location=[center_lat, center_lon], zoom_start=9, tiles="OpenStreetMap")
 
     # Draw MPA Background Layer FIRST
@@ -143,7 +150,7 @@ if grouped_interventions is not None and cma_spatial_gdf is not None and mpa_spa
         name="Marine Protected Areas (MPA)"
     ).add_to(m)
 
-    # Draw CFMA Base Boundaries with hover highlight
+    # Draw CFMA Base Boundaries with hover highlight (TOOLTIP REMOVED)
     folium.GeoJson(
         merged_gdf,
         style_function=lambda x: {
@@ -158,15 +165,42 @@ if grouped_interventions is not None and cma_spatial_gdf is not None and mpa_spa
             "weight": 3,
             "fillOpacity": 0.6
         },
-        tooltip=folium.GeoJsonTooltip(fields=["name"], aliases=["CMA:"]),
         name="Community Managed Area (CMA)"
     ).add_to(m)
 
     folium.LayerControl().add_to(m)
 
-    # 7. Render contextual indicator blocks at polygon thresholds
+    # 7. Render text labels and contextual indicator blocks
     for _, row in merged_gdf.iterrows():
-        # Iterate over the UNIQUE list of categories we generated in step 3
+        
+        # --- NEW FIX: Skip if geometry is missing or completely empty ---
+        if pd.isna(row.geometry) or row.geometry.is_empty:
+            continue
+            
+        # Place permanent CMA text label in the center (centroid) of the polygon
+        c_lat = row.geometry.centroid.y
+        c_lon = row.geometry.centroid.x
+        cma_name = str(row.get('name', ''))
+        
+        if cma_name and cma_name != "nan":
+            # HTML Div for the text label with a subtle white halo for readability
+            label_html = f"""
+            <div style="
+                font-size: 11px; 
+                font-weight: 700; 
+                color: #212529; 
+                text-shadow: 1px 1px 2px #fff, -1px -1px 2px #fff, 1px -1px 2px #fff, -1px 1px 2px #fff; 
+                white-space: nowrap; 
+                text-align: center; 
+                transform: translate(-50%, -50%);
+            ">{cma_name}</div>
+            """
+            folium.Marker(
+                location=[c_lat, c_lon],
+                icon=folium.DivIcon(html=label_html)
+            ).add_to(m)
+                
+        # Existing logic for colored category squares at the bounding box
         v_interventions = row["Categories"]
         if not v_interventions or len(v_interventions) == 0:
             continue
