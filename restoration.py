@@ -159,183 +159,226 @@ else:
 
 if not filtered_df.empty:
 
- st.header("Coral Restoration Records")
+    st.header("Coral Restoration Records")
 
- # map shows the size of plot based on number of fragments in nursery or transplated
+    # map shows the size of plot based on number of fragments in nursery or transplated
 
-# coords = pd.merge(coords, filtered_df.groupby(['site_name'])['total_fragments_in_nursery_to_date'].max().reset_index())
-# coords = pd.merge(coords, filtered_df.groupby(['site_name'])['total_fragments_transplanted_to_date'].max().reset_index())
-# coords = pd.merge(filtered_df[['site_name','site_type']], coords).drop_duplicates()
- 
- # 2. Define the Dot Layers
-
-
-# 2. Define Layer Data with reset_index()
- nursery_data = (
-     filtered_df[filtered_df['site_type'] == 'nursery']
-     .groupby('site_name')
-     .max()
-     .reset_index()
- )
- nursery_data['fragment_count'] = nursery_data['total_fragments_in_nursery_to_date']
-
- transplanting_data = (
-     filtered_df[filtered_df['site_type'] == 'transplanting']
-     .groupby('site_name')
-     .max()
-     .reset_index()
- )
-
- transplanting_data['fragment_count'] = transplanting_data['total_fragments_transplanted_to_date']
-
- from pydeck.types import String
- 
-
- # 3. Define the Dot Layers
- dots_layer_nursery = pdk.Layer(
-     'ScatterplotLayer',
-     data=nursery_data,
-     get_position='[longitude, latitude]',
-     get_radius="total_fragments_in_nursery_to_date / 1e3",
-     radius_units=String('pixels'),
-#     radius_min_pixels=3,
-#     radius_max_pixels=600,
-     pickable=True,
-     get_fill_color='[100, 100, 0, 160]',
- )
- 
-
- dots_layer_transplanting = pdk.Layer(
-     'ScatterplotLayer',
-     data=transplanting_data,
-     get_position='[longitude, latitude]',
-     get_radius="total_fragments_transplanted_to_date/1e3",
-     radius_units=String('pixels'), # do not touch
-     #point_radius_units='pixels',
-     #radius_min_pixels=3,
-     #radius_max_pixels=600,
-     get_fill_color='[200, 30, 60, 120]',
-     pickable=True,
- )
-
- # 4. Render the Map
- st.pydeck_chart(pdk.Deck(
-     map_style='light',
-     layers=[dots_layer_nursery, dots_layer_transplanting],
-     initial_view_state=pdk.ViewState(
-         latitude=np.mean(filtered_df.latitude),
-         longitude=np.mean(filtered_df.longitude),
-         zoom=7,
-         pitch=0,
-     ),
-     tooltip={"html": """<h4>{project_site}, {site_type}</h4>
-            <p>
-            Fragments, </br>
-            in Nursery: <b>{total_fragments_in_nursery_to_date}</b><br/>
-            Transplanted: <b>{total_fragments_transplanted_to_date}</b>
-            </p>
-            """,
-             "style": {
-             "position": "relative",
-             "marginTop": "20%",
-             "width":"20%"
-             }
-    }
- ))
+    # coords = pd.merge(coords, filtered_df.groupby(['site_name'])['total_fragments_in_nursery_to_date'].max().reset_index())
+    # coords = pd.merge(coords, filtered_df.groupby(['site_name'])['total_fragments_transplanted_to_date'].max().reset_index())
+    # coords = pd.merge(filtered_df[['site_name','site_type']], coords).drop_duplicates()
+    
+    # 2. Define the Dot Layers
 
 
+    # 2. Define Layer Data with reset_index()
+    nursery_data = (
+        filtered_df[filtered_df['site_type'] == 'nursery']
+        .groupby('site_name')
+        .max()
+        .reset_index()
+    )
+    nursery_data['fragment_count'] = nursery_data['total_fragments_in_nursery_to_date']
 
+    transplanting_data = (
+        filtered_df[filtered_df['site_type'] == 'transplanting']
+        .groupby('site_name')
+        .max()
+        .reset_index()
+    )
 
- # Aactivity Days by Site - all activities
- 
- con0 = st.container(border=True)
- con0.subheader("Activity by Site")
- activity_site = filtered_df[['_uuid','project_site','datetime']].drop_duplicates().groupby('project_site').resample('W', on='datetime').count().reset_index()
+    transplanting_data['fragment_count'] = transplanting_data['total_fragments_transplanted_to_date']
 
-#  boat_type = filtered_df.groupby('boat_type').count().sort_values(by='_uuid').reset_index()
+    from pydeck.types import String
+    
 
- fig_activity = alt.Chart(activity_site).mark_bar(size=20).encode(
-  x=alt.X('datetime', title='Time [week]', sort=None),
-  y=alt.Y('_uuid', title='Number of Days in the Field'),
-  color='project_site'
-  )
- con0.altair_chart(fig_activity, width='stretch')
+    # 3. Define the Dot Layers
+    dots_layer_nursery = pdk.Layer(
+        'ScatterplotLayer',
+        data=nursery_data,
+        get_position='[longitude, latitude]',
+        get_radius="total_fragments_in_nursery_to_date / 1e3",
+        radius_units=String('pixels'),
+    #     radius_min_pixels=3,
+    #     radius_max_pixels=600,
+        pickable=True,
+        get_fill_color='[100, 100, 0, 160]',
+    )
+    
+
+    dots_layer_transplanting = pdk.Layer(
+        'ScatterplotLayer',
+        data=transplanting_data,
+        get_position='[longitude, latitude]',
+        get_radius="total_fragments_transplanted_to_date/1e3",
+        radius_units=String('pixels'), # do not touch
+        #point_radius_units='pixels',
+        #radius_min_pixels=3,
+        #radius_max_pixels=600,
+        get_fill_color='[200, 30, 60, 120]',
+        pickable=True,
+    )
+
+    # 4. Render the Map
+    st.pydeck_chart(pdk.Deck(
+        map_style='light',
+        layers=[dots_layer_nursery, dots_layer_transplanting],
+        initial_view_state=pdk.ViewState(
+            latitude=np.mean(filtered_df.latitude),
+            longitude=np.mean(filtered_df.longitude),
+            zoom=7,
+            pitch=0,
+        ),
+            tooltip={"html": """<h4>{project_site}, {site_type}</h4>
+                <p>Fragments,<br/>
+                in Nursery: <b>{total_fragments_in_nursery_to_date}</b><br/>
+                Transplanted: <b>{total_fragments_transplanted_to_date}</b></p>"""}
+    ))
+
+    st.header('Restoration Effort')
+
+    # Aactivity Days by Site - all activities
+
+    con0 = st.container(border=True)
+    con0.subheader("Total days of activity")
+    activity_site = filtered_df[['_uuid','project_site','datetime']].drop_duplicates().groupby('project_site').resample('W', on='datetime').count().reset_index()
+
+    #  boat_type = filtered_df.groupby('boat_type').count().sort_values(by='_uuid').reset_index()
+
+    fig_activity = alt.Chart(activity_site).mark_bar(size=20).encode(
+    x=alt.X('datetime', title='Time [week]', sort=None),
+    y=alt.Y('_uuid', title='Number of Days in the Field'),
+    color='project_site'
+    )
+    con0.altair_chart(fig_activity, width='stretch')
 
 # Activity by site in time. Activities are: 'select_activity/fragmentation', 'select_activity/transplantation', 'select_activity/monitoring', 'select_activity/cleaning_and_maintaining' 
 
 # for 'select_activity/fragmentation'
 
- 
+    col_viz1, col_viz2 = st.columns(2)
 
- for activity in ['select_activity/fragmentation', 'select_activity/transplantation', 'select_activity/monitoring', 'select_activity/cleaning_and_maintaining']:
+    with col_viz1:
+        for activity in ['select_activity/fragmentation', 'select_activity/transplantation']:
+            title = activity.split('/')[1].title()
+            title = title.replace("_"," ")
+            conN = st.container(border=True)
+            conN.subheader(title)
+            
+            activity_df = filtered_df[filtered_df[activity] == 1]
+            activity_site = activity_df[['_uuid','project_site','datetime']].drop_duplicates().groupby('project_site').resample('W', on='datetime').count().reset_index()
 
-  title = activity.split('/')[1].title()
-  conN = st.container(border=True)
-  conN.subheader(title + " by Site")
- 
-  activity_df = filtered_df[filtered_df[activity] == 1]
-  activity_site = activity_df[['_uuid','project_site','datetime']].drop_duplicates().groupby('project_site').resample('W', on='datetime').count().reset_index()
+            activity_site = pd.merge(activity_site, df_date_range, left_on='datetime', right_on='date', how='right')
+            activity_site['_uuid'] = activity_site['_uuid'].fillna(0)
 
-  activity_site = pd.merge(activity_site, df_date_range, left_on='datetime', right_on='date', how='right')
-  activity_site['_uuid'] = activity_site['_uuid'].fillna(0)
+            fig_act = alt.Chart(activity_site).mark_bar(size=10).encode(
+            x=alt.X('date', title='Time [week]'),  
+            y=alt.Y('_uuid', title='Number of Days doing '+title),       
+            color=alt.Color('project_site:N',
+                    scale=alt.Scale(
+                        domain=list(activity_site['project_site'].unique().dropna()),  # Only maps colors to these real categories
+                    )
+                )
+            )
+            conN.altair_chart(fig_act, width='stretch')
 
-  fig_act = alt.Chart(activity_site).mark_bar(size=20).encode(
-   x=alt.X('date', title='Time [week]'),  
-   y=alt.Y('_uuid', title='Number of Days doing '+title),       
-   color=alt.Color('project_site:N',
-        scale=alt.Scale(
-            domain=list(activity_site['project_site'].unique().dropna()),  # Only maps colors to these real categories
-        )
+    with col_viz2:
+        for activity in ['select_activity/monitoring', 'select_activity/cleaning_and_maintaining']:
+
+            title = activity.split('/')[1].title()
+            title = title.replace("_"," ")
+            conN = st.container(border=True)
+            conN.subheader(title)
+            
+            activity_df = filtered_df[filtered_df[activity] == 1]
+            activity_site = activity_df[['_uuid','project_site','datetime']].drop_duplicates().groupby('project_site').resample('W', on='datetime').count().reset_index()
+
+            activity_site = pd.merge(activity_site, df_date_range, left_on='datetime', right_on='date', how='right')
+            activity_site['_uuid'] = activity_site['_uuid'].fillna(0)
+
+            fig_act = alt.Chart(activity_site).mark_bar(size=10).encode(
+            x=alt.X('date', title='Time [week]'),  
+            y=alt.Y('_uuid', title='Number of Days doing '+title),       
+            color=alt.Color('project_site:N',
+                    scale=alt.Scale(
+                        domain=list(activity_site['project_site'].unique().dropna()),  # Only maps colors to these real categories
+                    )
+                )
+            )
+            conN.altair_chart(fig_act, width='stretch')
+    
+    st.header('Restoration Impact')
+
+    con0 = st.container(border=True)
+    con0.subheader("Total area restored [ha]")
+
+    total_transplanted_corals = filtered_df[['_uuid','project_site','datetime','total_fragments_transplanted_to_date']].groupby('project_site').resample('W', on='datetime').max().ffill().reset_index()
+    total_transplanted_corals['total_area_transplanted_to_date'] = total_transplanted_corals['total_fragments_transplanted_to_date'] / 2 / 1e4
+    #  boat_type = filtered_df.groupby('boat_type').count().sort_values(by='_uuid').reset_index()
+
+    fig_activity = alt.Chart(total_transplanted_corals).mark_line(point=True, interpolate='natural').encode(
+    x=alt.X('datetime', title='Time [week]', sort=None),
+    y=alt.Y('total_area_transplanted_to_date', title='Transplanted Area to Date'),
+    color='project_site'
     )
-   )
-  conN.altair_chart(fig_act, width='stretch')
+    con0.altair_chart(fig_activity, width='stretch')
 
+    col_viz1, col_viz2 = st.columns(2)
 
+    with col_viz1:
+        for metric in ['total_fragments_transplanted_to_date', 'total_fragments_on_reef_stars_to_date']:
+            title = metric.replace("_"," ")
+            conN = st.container(border=True)
+            conN.subheader(title)
+            
+            metric_site = filtered_df[['_uuid','project_site','datetime',metric]].groupby('project_site').resample('W', on='datetime').max().ffill().reset_index()
 
-#  con2 = col_viz1.container(border=True)
-#  # Landings by Species Group
-#
-#  con2.subheader("Landings by Species Group")
-#  site_catch_df = filtered_df.groupby(['group_catch','landing_site'])['_uuid'].count().reset_index().sort_values(by='_uuid', ascending=False)
-#
-#
-#  fig_group = alt.Chart(site_catch_df).mark_bar().encode(
-#    x = alt.X('landing_site', title='Landing Site'),
-#    y = alt.Y('_uuid', title='Number of landings'),
-#    color='group_catch'
-#  )
-#
-#  con2.altair_chart(fig_group, width='stretch')
+            metric_site = pd.merge(metric_site, df_date_range, left_on='datetime', right_on='date', how='right')
+            
+            fig_act = alt.Chart(metric_site).mark_line(interpolate='natural', point=True).encode(
+            x=alt.X('date', title='Time [week]'),  
+            y=alt.Y(metric, title=title),       
+            color=alt.Color('project_site:N',
+                    scale=alt.Scale(
+                        domain=list(metric_site['project_site'].unique().dropna()),  # Only maps colors to these real categories
+                    )
+                )
+            )
+            conN.altair_chart(fig_act, width='stretch')
 
+    with col_viz2:
+        for metric in ['total_fragments_on_fence_wires_to_date', 'total_fragments_on_clips_to_date']:
+            title = metric.replace("_"," ")
+            conN = st.container(border=True)
+            conN.subheader(title)
+            
+            metric_site = filtered_df[['_uuid','project_site','datetime',metric]].groupby('project_site').resample('W', on='datetime').max().ffill().reset_index()
 
+            metric_site = pd.merge(metric_site, df_date_range, left_on='datetime', right_on='date', how='right')
+            
+            fig_act = alt.Chart(metric_site).mark_line(interpolate='natural', point=True).encode(
+            x=alt.X('date', title='Time [week]'),  
+            y=alt.Y(metric, title=title),       
+            color=alt.Color('project_site:N',
+                    scale=alt.Scale(
+                        domain=list(metric_site['project_site'].unique().dropna()),  # Only maps colors to these real categories
+                    )
+                )
+            )
+            conN.altair_chart(fig_act, width='stretch')
 
-# with col_viz2:
-#
-#  # Landings by Gear Type
-#
-#  con3 = col_viz2.container(border=True)
-#
-#  con3.subheader("Landings by Gear Type")
+    st.header('Restoration Performance')
 
+    con0 = st.container(border=True)
+    con0.subheader("Fragments transplanted per month")
 
+    session_transplanted_corals = filtered_df[['_uuid','project_site','datetime','total_number_of_fragments_transplanted']].groupby('project_site').resample('ME', on='datetime').sum().dropna().reset_index()
+    
+    session_transplanted_corals = pd.merge(session_transplanted_corals, df_date_range, left_on='datetime', right_on='date', how='right')
+            
 
-
-
-# html_string = deck.to_html(as_string=True)
-# components.html(html_string, height=600)  # 👈 Replaces st.pydeck_chart
-
-# labels_layer = pdk.Layer(
-#     "TextLayer",
-#     data = concat_df, 
-#     get_position='[longitude, latitude]',
-#     get_text='site_name',
-#     get_size=10,
-#     size_units="'pixels'",
-#     get_color=[0, 0, 0, 255],
-#     get_alignment_baseline="'bottom'",
-#     get_text_anchor="'middle'",
-# )
- 
-# import sys
-# sys.exit()
-
+    fig_activity = alt.Chart(session_transplanted_corals).mark_bar(size=100).encode(
+    x=alt.X('datetime', title='Time [month]', sort=None),
+    y=alt.Y('total_number_of_fragments_transplanted', title='Transplanted Fragments per Session'),
+    color='project_site'
+    )
+    con0.altair_chart(fig_activity, width='stretch')

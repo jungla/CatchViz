@@ -134,7 +134,7 @@ if grouped_interventions is not None and cma_spatial_gdf is not None and mpa_spa
         # Fallback if no valid geometry is found
         center_lat, center_lon = -6.0, 39.0 
         
-    m = folium.Map(location=[center_lat, center_lon], zoom_start=9, tiles="OpenStreetMap")
+    m = folium.Map(location=[center_lat, center_lon], zoom_start=10, tiles="OpenStreetMap")
 
     # Draw MPA Background Layer FIRST
     folium.GeoJson(
