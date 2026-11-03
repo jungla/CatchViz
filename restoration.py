@@ -325,7 +325,7 @@ if not filtered_df.empty:
     con0 = st.container(border=True)
     con0.subheader("Total area restored [ha]")
 
-    total_transplanted_corals = filtered_df[['_uuid','project_site','datetime','total_fragments_transplanted_to_date']].groupby('project_site').resample(freq, on='datetime').max().ffill().reset_index()
+    total_transplanted_corals = filtered_df[['_uuid','project_site','datetime','total_fragments_transplanted_to_date']].groupby('project_site').resample(freq, on='datetime').max().dropna().reset_index()
     total_transplanted_corals['total_area_transplanted_to_date'] = total_transplanted_corals['total_fragments_transplanted_to_date'] / 2 / 1e4
     #  boat_type = filtered_df.groupby('boat_type').count().sort_values(by='_uuid').reset_index()
 
@@ -344,7 +344,7 @@ if not filtered_df.empty:
             conN = st.container(border=True)
             conN.subheader(title)
             
-            metric_site = filtered_df[['_uuid','project_site','datetime',metric]].groupby('project_site').resample(freq, on='datetime').max().ffill().reset_index()
+            metric_site = filtered_df[['_uuid','project_site','datetime',metric]].groupby('project_site').resample(freq, on='datetime').max().dropna().reset_index()
 
             metric_site = pd.merge(metric_site, df_date_range, left_on='datetime', right_on='date', how='right')
             
@@ -365,7 +365,7 @@ if not filtered_df.empty:
             conN = st.container(border=True)
             conN.subheader(title)
             
-            metric_site = filtered_df[['_uuid','project_site','datetime',metric]].groupby('project_site').resample(freq, on='datetime').max().ffill().reset_index()
+            metric_site = filtered_df[['_uuid','project_site','datetime',metric]].groupby('project_site').resample(freq, on='datetime').max().dropna().reset_index()
 
             metric_site = pd.merge(metric_site, df_date_range, left_on='datetime', right_on='date', how='right')
             
