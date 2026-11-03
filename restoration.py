@@ -164,7 +164,7 @@ if not filtered_df.empty:
     with col3:
         st.metric(label="Number of Tables in Nurseries", value=int(total_nursery_tables))
     with col4:
-        st.metric(label="Total Area Restored (ha)", value=f"{total_area_restored:,.2f}")
+        st.metric(label="Total Area Transplanted (ha)", value=f"{total_area_restored:,.2f}")
     st.markdown("---")
 else:
     st.warning("No data available for the selected filters.")
@@ -259,7 +259,7 @@ if not filtered_df.empty:
     #  boat_type = filtered_df.groupby('boat_type').count().sort_values(by='_uuid').reset_index()
 
     fig_activity = alt.Chart(activity_site).mark_bar().encode(
-    x=alt.X('datetime', title='Time [week]', sort=None),
+    x=alt.X('datetime', title='Time ['+str(freq)+']', sort=None),
     y=alt.Y('_uuid', title='Number of Days in the Field'),
     color='project_site'
     )
@@ -285,7 +285,7 @@ if not filtered_df.empty:
             activity_site['_uuid'] = activity_site['_uuid'].fillna(0)
 
             fig_act = alt.Chart(activity_site).mark_bar().encode(
-            x=alt.X('date', title='Time [week]'),  
+            x=alt.X('date', title='Time ['+str(freq)+']'),  
             y=alt.Y('_uuid', title='Number of Days doing '+title),       
             color=alt.Color('project_site:N',
                     scale=alt.Scale(
@@ -310,7 +310,7 @@ if not filtered_df.empty:
             activity_site['_uuid'] = activity_site['_uuid'].fillna(0)
 
             fig_act = alt.Chart(activity_site).mark_bar().encode(
-            x=alt.X('date', title='Time [week]'),  
+            x=alt.X('date', title='Time ['+str(freq)+']'),  
             y=alt.Y('_uuid', title='Number of Days doing '+title),       
             color=alt.Color('project_site:N',
                     scale=alt.Scale(
@@ -330,7 +330,7 @@ if not filtered_df.empty:
     #  boat_type = filtered_df.groupby('boat_type').count().sort_values(by='_uuid').reset_index()
 
     fig_activity = alt.Chart(total_transplanted_corals).mark_line(point=True, interpolate='natural').encode(
-    x=alt.X('datetime', title='Time [week]', sort=None),
+    x=alt.X('datetime', title='Time ['+str(freq)+']', sort=None),
     y=alt.Y('total_area_transplanted_to_date', title='Transplanted Area to Date'),
     color='project_site'
     )
@@ -349,7 +349,7 @@ if not filtered_df.empty:
             metric_site = pd.merge(metric_site, df_date_range, left_on='datetime', right_on='date', how='right')
             
             fig_act = alt.Chart(metric_site).mark_line(interpolate='natural', point=True).encode(
-            x=alt.X('date', title='Time [week]'),  
+            x=alt.X('date', title='Time ['+str(freq)+']'),  
             y=alt.Y(metric, title=title),       
             color=alt.Color('project_site:N',
                     scale=alt.Scale(
@@ -370,7 +370,7 @@ if not filtered_df.empty:
             metric_site = pd.merge(metric_site, df_date_range, left_on='datetime', right_on='date', how='right')
             
             fig_act = alt.Chart(metric_site).mark_line(interpolate='natural', point=True).encode(
-            x=alt.X('date', title='Time [week]'),  
+            x=alt.X('date', title='Time ['+str(freq)+']'),  
             y=alt.Y(metric, title=title),       
             color=alt.Color('project_site:N',
                     scale=alt.Scale(
@@ -383,14 +383,14 @@ if not filtered_df.empty:
     st.header('Restoration Performance')
 
     con0 = st.container(border=True)
-    con0.subheader("Fragments transplanted per month")
+    con0.subheader("Fragments transplanted")
 
     session_transplanted_corals = filtered_df[['_uuid','project_site','datetime','total_number_of_fragments_transplanted']].groupby('project_site').resample(freq, on='datetime').sum().dropna().reset_index()
     
     session_transplanted_corals = pd.merge(session_transplanted_corals, df_date_range, left_on='datetime', right_on='date', how='right')
             
     fig_activity = alt.Chart(session_transplanted_corals).mark_bar().encode(
-    x=alt.X('datetime', title='Time [month]', sort=None),
+    x=alt.X('datetime', title='Time ['+str(freq)+']', sort=None),
     y=alt.Y('total_number_of_fragments_transplanted', title='Transplanted Fragments per Session'),
     color='project_site'
     )
