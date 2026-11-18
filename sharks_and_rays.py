@@ -99,9 +99,8 @@ def read_data(filename):
  df = pd.read_csv(filename, low_memory=False) # parquet loses some data
  return df
 
-df = read_data('SHARK_kobo_data.csv') # parquet loses some data
+df = read_data('kobo_data/SHARK_kobo_data.csv') # parquet loses some data
 
-df = pd.read_csv('SHARK_kobo_data.csv', low_memory=True) # parquet loses some data
 df = pd.merge(df, df_IUCN, left_on='Scientific_name', right_on = 'Scientific_name', how='left')
 
 df['today'] = pd.to_datetime(df['today'],format='mixed')
@@ -210,6 +209,21 @@ selected_groups = st.sidebar.multiselect(
 
 filtered_df = df[(df['date'] >= start_date) & (df['date'] <= end_date) & (df['landing_site'].isin(selected_sites) | df['market'].isin(selected_markets)) & (df['type'].isin(selected_groups))]
 
+# # --- Poster Export Option ---
+# try:
+#     from poster_generator import render_poster_export_ui
+#     render_poster_export_ui(
+#         df=filtered_df,
+#         report_type="sharks_rays",
+#         start_date=start_date,
+#         end_date=end_date,
+#         selected_sites=selected_sites,
+#         selected_groups=selected_groups,
+#         selected_markets=selected_markets
+#     )
+# except Exception:
+#     pass
+
 
 # --- Main Page Content ---
 
@@ -233,7 +247,7 @@ with col1:
      }
      </style>
 
-     <h1 class="h1-custom">Data Visualization Platform</h1>
+     <h1 class="h1-custom">Field Activities</h1>
      <h2 class="h2-custom">Landings of Sharks and Rays</h2>
      """, unsafe_allow_html=True)
 

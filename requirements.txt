@@ -9,3 +9,5 @@ onnxruntime
 folium
 geopandas
 streamlit_folium
+matplotlib
+typst

@@ -13,7 +13,7 @@ def read_data(filename):
  df = pd.read_csv(filename, low_memory=False) # parquet loses some data
  return df
 
-df = pd.read_csv('RESTORATION_kobo_data.csv', low_memory=False) # parquet loses some data
+df = read_data('kobo_data/RESTORATION_kobo_data.csv') # parquet loses some data
 
 #df['today'] = pd.to_datetime(df['Date'],format='mixed')
 
@@ -74,7 +74,7 @@ date_range = st.sidebar.date_input(
     value=(min_date, max_date),
     min_value=min_date,
     max_value=max_date,
-    key='date_filter'
+    key='restoration_date_filter'
 )
 
 start_date = min_date
@@ -90,14 +90,13 @@ selected_site_name= st.sidebar.multiselect(
     "Select Site(s):",
     options=all_sites,
     default=all_sites,
-    key='site_filter'
+    key='restoration_site_filter'
 )
 
 
 # --- Apply Filters ---
 
 filtered_df = df[(df['date'] >= start_date) & (df['date'] <= end_date) & (df['site_name'].isin(selected_site_name))]
-
 
 # --- Main Page Content ---
 
@@ -121,7 +120,7 @@ with col1:
      }
      </style>
 
-     <h1 class="h1-custom">Data Visualization Platform</h1>
+     <h1 class="h1-custom">Field Activities</h1>
      <h2 class="h2-custom">Coral Restoration Projects</h2>
      """, unsafe_allow_html=True)
 
@@ -254,9 +253,11 @@ if not filtered_df.empty:
 
     con0 = st.container(border=True)
     con0.subheader("Total days of activity")
-    activity_site = filtered_df[['_uuid','project_site','datetime']].drop_duplicates().groupby('project_site').resample(freq, on='datetime').count().reset_index()
-
-    #  boat_type = filtered_df.groupby('boat_type').count().sort_values(by='_uuid').reset_index()
+    activity_sub = filtered_df[['_uuid','project_site','datetime']].dropna(subset=['datetime']).drop_duplicates()
+    if activity_sub.empty:
+        activity_site = pd.DataFrame(columns=['_uuid', 'project_site', 'datetime'])
+    else:
+        activity_site = activity_sub.groupby('project_site').resample(freq, on='datetime').count().reset_index()
 
     fig_activity = alt.Chart(activity_site).mark_bar().encode(
     x=alt.X('datetime', title='Time ['+str(freq)+']', sort=None),
@@ -279,7 +280,10 @@ if not filtered_df.empty:
             conN.subheader(title)
             
             activity_df = filtered_df[filtered_df[activity] == 1]
-            activity_site = activity_df[['_uuid','project_site','datetime']].drop_duplicates().groupby('project_site').resample(freq, on='datetime').count().reset_index()
+            if activity_df.empty:
+                activity_site = pd.DataFrame(columns=['_uuid', 'site_name', 'datetime'])
+            else:
+                activity_site = activity_df[['_uuid','site_name','datetime']].drop_duplicates().groupby('site_name').resample(freq, on='datetime').count().reset_index()
 
             activity_site = pd.merge(activity_site, df_date_range, left_on='datetime', right_on='date', how='right')
             activity_site['_uuid'] = activity_site['_uuid'].fillna(0)
@@ -287,9 +291,9 @@ if not filtered_df.empty:
             fig_act = alt.Chart(activity_site).mark_bar().encode(
             x=alt.X('date', title='Time ['+str(freq)+']'),  
             y=alt.Y('_uuid', title='Number of Days doing '+title),       
-            color=alt.Color('project_site:N',
+            color=alt.Color('site_name:N',
                     scale=alt.Scale(
-                        domain=list(activity_site['project_site'].unique().dropna()),  # Only maps colors to these real categories
+                        domain=activity_site['site_name'].dropna().unique().tolist(),  # Only maps colors to these real categories
                     )
                 )
             )
@@ -304,7 +308,10 @@ if not filtered_df.empty:
             conN.subheader(title)
             
             activity_df = filtered_df[filtered_df[activity] == 1]
-            activity_site = activity_df[['_uuid','project_site','datetime']].drop_duplicates().groupby('project_site').resample(freq, on='datetime').count().reset_index()
+            if activity_df.empty:
+                activity_site = pd.DataFrame(columns=['_uuid', 'site_name', 'datetime'])
+            else:
+                activity_site = activity_df[['_uuid','site_name','datetime']].drop_duplicates().groupby('site_name').resample(freq, on='datetime').count().reset_index()
 
             activity_site = pd.merge(activity_site, df_date_range, left_on='datetime', right_on='date', how='right')
             activity_site['_uuid'] = activity_site['_uuid'].fillna(0)
@@ -312,9 +319,9 @@ if not filtered_df.empty:
             fig_act = alt.Chart(activity_site).mark_bar().encode(
             x=alt.X('date', title='Time ['+str(freq)+']'),  
             y=alt.Y('_uuid', title='Number of Days doing '+title),       
-            color=alt.Color('project_site:N',
+            color=alt.Color('site_name:N',
                     scale=alt.Scale(
-                        domain=list(activity_site['project_site'].unique().dropna()),  # Only maps colors to these real categories
+                        domain=activity_site['site_name'].dropna().unique().tolist(),  # Only maps colors to these real categories
                     )
                 )
             )
@@ -325,14 +332,17 @@ if not filtered_df.empty:
     con0 = st.container(border=True)
     con0.subheader("Total area restored [ha]")
 
-    total_transplanted_corals = filtered_df[['_uuid','project_site','datetime','total_fragments_transplanted_to_date']].groupby('project_site').resample(freq, on='datetime').max().dropna().reset_index()
-    total_transplanted_corals['total_area_transplanted_to_date'] = total_transplanted_corals['total_fragments_transplanted_to_date'] / 2 / 1e4
-    #  boat_type = filtered_df.groupby('boat_type').count().sort_values(by='_uuid').reset_index()
+    transplanted_sub = filtered_df[['_uuid','site_name','datetime','total_fragments_transplanted_to_date']].dropna(subset=['datetime', 'total_fragments_transplanted_to_date'])
+    if transplanted_sub.empty:
+        total_transplanted_corals = pd.DataFrame(columns=['_uuid', 'site_name', 'datetime', 'total_fragments_transplanted_to_date', 'total_area_transplanted_to_date'])
+    else:
+        total_transplanted_corals = transplanted_sub.groupby('site_name').resample(freq, on='datetime').max().dropna().reset_index()
+        total_transplanted_corals['total_area_transplanted_to_date'] = total_transplanted_corals['total_fragments_transplanted_to_date'] / 2 / 1e4
 
     fig_activity = alt.Chart(total_transplanted_corals).mark_line(point=True, interpolate='natural').encode(
     x=alt.X('datetime', title='Time ['+str(freq)+']', sort=None),
     y=alt.Y('total_area_transplanted_to_date', title='Transplanted Area to Date'),
-    color='project_site'
+    color='site_name'
     )
     con0.altair_chart(fig_activity, width='stretch')
 
@@ -344,16 +354,20 @@ if not filtered_df.empty:
             conN = st.container(border=True)
             conN.subheader(title)
             
-            metric_site = filtered_df[['_uuid','project_site','datetime',metric]].groupby('project_site').resample(freq, on='datetime').max().dropna().reset_index()
+            sub_metric = filtered_df[['_uuid','site_name','datetime',metric]].dropna(subset=['datetime', metric])
+            if sub_metric.empty:
+                metric_site = pd.DataFrame(columns=['_uuid', 'site_name', 'datetime', metric])
+            else:
+                metric_site = sub_metric.groupby('site_name').resample(freq, on='datetime').max().dropna().reset_index()
 
             metric_site = pd.merge(metric_site, df_date_range, left_on='datetime', right_on='date', how='right')
             
             fig_act = alt.Chart(metric_site).mark_line(interpolate='natural', point=True).encode(
             x=alt.X('date', title='Time ['+str(freq)+']'),  
             y=alt.Y(metric, title=title),       
-            color=alt.Color('project_site:N',
+            color=alt.Color('site_name:N',
                     scale=alt.Scale(
-                        domain=list(metric_site['project_site'].unique().dropna()),  # Only maps colors to these real categories
+                        domain=metric_site['site_name'].dropna().unique().tolist(),  # Only maps colors to these real categories
                     )
                 )
             )
@@ -365,16 +379,20 @@ if not filtered_df.empty:
             conN = st.container(border=True)
             conN.subheader(title)
             
-            metric_site = filtered_df[['_uuid','project_site','datetime',metric]].groupby('project_site').resample(freq, on='datetime').max().dropna().reset_index()
+            sub_metric = filtered_df[['_uuid','site_name','datetime',metric]].dropna(subset=['datetime', metric])
+            if sub_metric.empty:
+                metric_site = pd.DataFrame(columns=['_uuid', 'site_name', 'datetime', metric])
+            else:
+                metric_site = sub_metric.groupby('site_name').resample(freq, on='datetime').max().dropna().reset_index()
 
             metric_site = pd.merge(metric_site, df_date_range, left_on='datetime', right_on='date', how='right')
             
             fig_act = alt.Chart(metric_site).mark_line(interpolate='natural', point=True).encode(
             x=alt.X('date', title='Time ['+str(freq)+']'),  
             y=alt.Y(metric, title=title),       
-            color=alt.Color('project_site:N',
+            color=alt.Color('site_name:N',
                     scale=alt.Scale(
-                        domain=list(metric_site['project_site'].unique().dropna()),  # Only maps colors to these real categories
+                        domain=metric_site['site_name'].dropna().unique().tolist(),  # Only maps colors to these real categories
                     )
                 )
             )
@@ -385,13 +403,17 @@ if not filtered_df.empty:
     con0 = st.container(border=True)
     con0.subheader("Fragments transplanted")
 
-    session_transplanted_corals = filtered_df[['_uuid','project_site','datetime','total_number_of_fragments_transplanted']].groupby('project_site').resample(freq, on='datetime').sum().dropna().reset_index()
+    session_sub = filtered_df[['_uuid','site_name','datetime','total_number_of_fragments_transplanted']].dropna(subset=['datetime', 'total_number_of_fragments_transplanted'])
+    if session_sub.empty:
+        session_transplanted_corals = pd.DataFrame(columns=['_uuid', 'site_name', 'datetime', 'total_number_of_fragments_transplanted'])
+    else:
+        session_transplanted_corals = session_sub.groupby('site_name').resample(freq, on='datetime').sum().dropna().reset_index()
     
     session_transplanted_corals = pd.merge(session_transplanted_corals, df_date_range, left_on='datetime', right_on='date', how='right')
             
     fig_activity = alt.Chart(session_transplanted_corals).mark_bar().encode(
     x=alt.X('datetime', title='Time ['+str(freq)+']', sort=None),
     y=alt.Y('total_number_of_fragments_transplanted', title='Transplanted Fragments per Session'),
-    color='project_site'
+    color='site_name'
     )
     con0.altair_chart(fig_activity, width='stretch')

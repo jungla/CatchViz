@@ -12,7 +12,7 @@ def read_data(filename):
  df = pd.read_csv(filename, low_memory=True) # parquet loses some data
  return df
 
-df = read_data('CATCH_kobo_data.csv') # parquet loses some data
+df = read_data('kobo_data/CATCH_kobo_data.csv') # parquet loses some data
 
 # --- Sidebar Filters ---
 
@@ -43,7 +43,7 @@ date_range = st.sidebar.date_input(
     value=(min_date, max_date),
     min_value=min_date,
     max_value=max_date,
-    key='date_filter'
+    key='bony_date_filter'
 )
 
 start_date = min_date
@@ -58,7 +58,7 @@ selected_sites = st.sidebar.multiselect(
     "Select Site(s):",
     options=all_sites,
     default=all_sites,
-    key='site_filter'
+    key='bony_site_filter'
 )
 
 # type catch filter
@@ -68,7 +68,7 @@ selected_groups = st.sidebar.multiselect(
     "Select Group(s):",
     options=all_groups,
     default=['reef_fish','tuna_like','small_pelagic'],
-    key='group_filter'
+    key='bony_group_filter'
 )
 
 # --- Apply Filters ---
@@ -78,6 +78,20 @@ filtered_df = df[
     (df['landing_site'].isin(selected_sites)) &
     (df['group_catch'].isin(selected_groups))
 ]
+
+# # --- Poster Export Option ---
+# try:
+#     from poster_generator import render_poster_export_ui
+#     render_poster_export_ui(
+#         df=filtered_df,
+#         report_type="bony_fishes",
+#         start_date=start_date,
+#         end_date=end_date,
+#         selected_sites=selected_sites,
+#         selected_groups=selected_groups
+#     )
+# except Exception:
+#     pass
 
 # --- Main Page Content ---
 
@@ -102,7 +116,7 @@ with col1:
      }
      </style>
 
-     <h1 class="h1-custom">Data Visualization Platform</h1>
+     <h1 class="h1-custom">Field Activities</h1>
      <h2 class="h2-custom">Landings of Bony Fishes</h2>
      """, unsafe_allow_html=True)
 

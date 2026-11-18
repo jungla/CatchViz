@@ -183,7 +183,7 @@ def process_data(dataset, fname): # Explicitly load 'catch_catch' sheet
 
  return output
 
-def upload_to_github(file_path, repo_name, token):
+def upload_to_github(file_path, repo_name, token, repo_target_path=None):
 
     auth = Auth.Token(token)
 
@@ -198,20 +198,21 @@ def upload_to_github(file_path, repo_name, token):
          content = file.read()
 
         # Path in the repo where you want to save it
+        target_path = repo_target_path if repo_target_path else Path(file_path).name
 
         # Check if file exists to update it, or create new
-         try:
-          contents = repo.get_contents(file_path)
-          print("File exists. Updating with new one.")
-          repo.update_file(contents.path, "Daily Data Update", content, contents.sha)
-         except GithubException as e:
-          if e.status == 404:
-           print("File does not exist. Creating new.")
-           repo.create_file(file_path, "Initial Data Upload", content)
-          else:
-           raise
+        try:
+         contents = repo.get_contents(target_path)
+         print("File exists. Updating with new one.")
+         repo.update_file(contents.path, "Daily Data Update", content, contents.sha)
+        except GithubException as e:
+         if e.status == 404:
+          print("File does not exist. Creating new.")
+          repo.create_file(target_path, "Initial Data Upload", content)
+         else:
+          raise
  
-         print("Upload to GitHub successful!")
+        print("Upload to GitHub successful!")
 
     except Exception as e:
         print(f"GitHub Upload Failed: {e}")
@@ -231,7 +232,7 @@ for dataset in datasets:
 
  # 2. delete recent downloads that are not complete for this dataset
 
- all_kobo_files = glob.glob(dataset+"*kobo_data.xlsx")
+ all_kobo_files = glob.glob('kobo_data/'+dataset+"*kobo_data.xlsx")
  files_to_delete = [f for f in all_kobo_files if not f.endswith("999_kobo_data.xlsx")]
 
  for file in files_to_delete:
@@ -252,50 +253,45 @@ for dataset in datasets:
   for i in range(int(trec / 5000)):
    start_rec = i * 5000
    end_rec = (i+1) * 5000 - 1
-   fname_out = dataset+'_'+str(start_rec)+'_'+str(end_rec)+'_kobo_data.xlsx'
+   fname_out = 'kobo_data/'+dataset+'_'+str(start_rec)+'_'+str(end_rec)+'_kobo_data.xlsx'
  
-   file_path = Path(fname_out)
- 
-   if not file_path.is_file():
-    print('downloading file chunk: '+fname_out)
+   if not Path(fname_out).is_file():
+    print(f"downloading file chunk: {fname_out.name}")
     start_id, end_id = find_start_end_ids(ASSET_UID[dataset], start_rec, end_rec)
     #print(start_id)
     #print(end_id)
     download_url = create_export_setting(ASSET_UID[dataset], start_id, end_id)
-    download_data(dataset, download_url, fname_out)
+    download_data(dataset, download_url, str(fname_out))
  
   start_rec = (i+1) * 5000
   end_rec = (i+1) * 5000 + trec % 5000 
-  fname_out = dataset+'_'+str(start_rec)+'_'+str(end_rec)+'_kobo_data.xlsx'
+  fname_out = 'kobo_data/'+dataset+'_'+str(start_rec)+'_'+str(end_rec)+'_kobo_data.xlsx'
   print('downloading last file: '+fname_out)
  
   start_id, end_id = find_start_end_ids(ASSET_UID[dataset], start_rec, end_rec-1)
   #print(start_id)
   #print(end_id)
   download_url = create_export_setting(ASSET_UID[dataset], start_id, end_id)
-  download_data(dataset, download_url, fname_out)
+  download_data(dataset, download_url, str(fname_out))
 
  else:
   start_rec = 0
   end_rec = trec -1
-  fname_out = dataset+'_'+str(start_rec)+'_'+str(end_rec)+'_kobo_data.xlsx'
+  fname_out = 'kobo_data/'+dataset+'_'+str(start_rec)+'_'+str(end_rec)+'_kobo_data.xlsx'
 
-  file_path = Path(fname_out)
-
-  if not file_path.is_file():
-   print('downloading short file: '+fname_out)
-   print(fname_out)
+  if not Path(fname_out).is_file():
+   print(f"downloading short file: {fname_out.name}")
    start_id, end_id = find_start_end_ids(ASSET_UID[dataset], start_rec, end_rec)
    #print(start_id)
    #print(end_id)
    download_url = create_export_setting(ASSET_UID[dataset], start_id, end_id)
-   download_data(dataset, download_url, fname_out)
+   download_data(dataset, download_url, str(fname_out))
 
  # 5. process data from each xlsx into one csv file
 
  data_out = pd.DataFrame()
 
- files = glob.glob(dataset+"*xlsx")
+ files = glob.glob('kobo_data/'+dataset+"*xlsx")
  print("processing xlsxs in csv")
 
  for file in files:
@@ -303,7 +299,7 @@ for dataset in datasets:
   data = process_data(dataset, file)
   data_out = pd.concat([data_out, data], ignore_index=True) 
 
- data_out.to_csv(dataset+'_kobo_data.csv')
+ data_out.to_csv('kobo_data/'+dataset+'_kobo_data.csv')
 
  # 6. upload to github
- upload_to_github(dataset+'_kobo_data.csv', 'jungla/CatchViz', os.environ['GIT_TOKEN'])
+ upload_to_github('kobo_data/'+dataset+'_kobo_data.csv', 'jungla/CatchViz', os.environ['GIT_TOKEN'])
