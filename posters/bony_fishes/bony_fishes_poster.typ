@@ -1,232 +1,123 @@
-// CatchViz - Artisanal Bony Fishes Landings A0 Poster
-#set page(
-  paper: "a0",
-  flipped: false,
-  margin: (x: 2.2cm, top: 2.2cm, bottom: 2.2cm),
-  fill: rgb("#f8fafc")
+// CatchViz - Artisanal Bony Fishes Landings A0 Poster Template
+#import "master_template.typ": *
+
+#let start_date = "2010-01-01"
+#let end_date = "2026-11-18"
+#let selected_sites = "28 sites selected (bwawani, chole, chwaka, fumba...)"
+#let total_catch = "349,843.7 kg"
+#let num_records = "36,683"
+#let avg_catch = "14.85 kg"
+#let logo_filename = "wcs_logo.png"
+#let site_rows = (
+    [Moa], [5,418], [72,160.1],
+  [Msuka], [3,651], [47,309.0],
+  [Tongoni], [1,359], [39,342.4],
+  [Sahare], [3,773], [37,049.0],
+  [Mazizini], [2,407], [23,668.1],
+  [Mkoani], [2,108], [19,353.4],
 )
 
-#set text(
-  font: ("Liberation Sans", "DejaVu Sans", "Helvetica", "Arial"),
-  size: 21pt,
-  fill: rgb("#0f172a")
-)
+#wcs_poster(
+  header: poster_header(
+    logo_filename: logo_filename,
+    kicker: "WCS TANZANIA MARINE PROGRAM  •  CATCH MONITORING PLATFORM",
+    title: "Overview — How is the fishery doing, and how do districts/BMUs compare?",
+    meta_items: (
+      [*Target Group:* Bony Fishes],
+      [*Period:* #start_date to #end_date],
+      [*Sites:* #selected_sites],
+    ),
+    badge_text: "A0 FISHERY\nBRIEF",
+    kpis: (
+      banner_kpi(value: total_catch, label: "Total Catch Recorded"),
+      banner_kpi(value: num_records, label: "Landing Records"),
+      banner_kpi(value: avg_catch, label: "Average Catch / Trip"),
+    ),
+  ),
 
-// Reusable card container
-#let card(title: none, icon: none, body) = block(
-  width: 100%,
-  fill: white,
-  inset: 24pt,
-  radius: 14pt,
-  stroke: 1.5pt + rgb("#e2e8f0"),
-  [
-    #if title != none [
-      #block(
-        width: 100%,
-        inset: (bottom: 12pt),
-        stroke: (bottom: 2.5pt + rgb("#0284c7")),
-        [
-          #text(weight: "bold", size: 28pt, fill: rgb("#0369a1"))[
-            #if icon != none [#icon ] #title
-          ]
-        ]
-      )
-      #v(10pt)
-    ]
-    #body
-  ]
-)
+  footer: poster_footer(
+    protocol_title: "Monitoring Protocol & Open-Access Data Citation",
+    protocol_body: [
+      *Field Protocol:* Catch data are gathered via standardized KoboToolbox digital surveys by trained community enumerators in collaboration with Beach Management Units (BMUs) and Fisheries Officers.
+      #h(16pt) • #h(16pt)
+      *Data Archive:* Curated and synchronized every 10 days via Zenodo (*DOI: 10.5281/zenodo.15229813*).
+    ],
+    generated_time: "2026-11-19 13:34",
+  ),
 
-// KPI Stat Box
-#let kpi_card(value: "", label: "", icon: "", sublabel: none, border_color: rgb("#0284c7"), num_color: rgb("#0369a1")) = block(
-  fill: white,
-  inset: 22pt,
-  radius: 12pt,
-  stroke: 2pt + border_color,
-  width: 100%,
-  align(center)[
-    #if icon != "" [#text(size: 28pt)[#icon] \ #v(4pt)]
-    #text(weight: "extrabold", size: 52pt, fill: num_color)[#value] \
-    #v(4pt)
-    #text(weight: "bold", size: 22pt, fill: rgb("#1e293b"))[#label]
-    #if sublabel != none [
-      \ #v(2pt)
-      #text(size: 16pt, fill: rgb("#64748b"))[#sublabel]
-    ]
-  ]
-)
+  // ROW 1, COL 1
+  card(
+    title: "Where are artisanal landings concentrated along the coast?",
+    subtitle: "Spatial distribution of monitored landings across Tanzania and Zanzibar.",
+    takeaway: [
+      *What this shows:* Circle area reflects relative sampling volume per landing site. Concentration around key coastal hubs highlights where monitoring coverage and fishing pressure are highest.
+    ],
+  )[
+    #image("figures/fig_map.png", width: 100%, height: 1fr, fit: "contain")
+  ],
 
-// =============================================================================
-// HEADER BANNER
-// =============================================================================
-#block(
-  fill: rgb("#0b2545"),
-  inset: (x: 32pt, y: 26pt),
-  radius: 16pt,
-  width: 100%,
-  [
-    #grid(
-      columns: (180pt, 1fr, 180pt),
-      align: (center + horizon, left + horizon, center + horizon),
-      image("figures/wcs_logo.png", width: 150pt),
-      pad(left: 20pt)[
-        #text(fill: rgb("#93c5fd"), weight: "bold", size: 24pt)[WCS TANZANIA MARINE PROGRAM • CATCH MONITORING PLATFORM] \
-        #v(6pt)
-        #text(fill: white, weight: "extrabold", size: 52pt)[Landings of Bony Fishes] \
-        #v(8pt)
-        #text(fill: rgb("#e2e8f0"), size: 22pt)[
-          *Reporting Period:* 2010-01-01 to 2026-10-29 #h(18pt) | #h(18pt) *Sites:* 28 sites selected (bwawani, chole, chwaka, fumba...)
-        ]
-      ],
-      align(center)[
-        #block(
-          fill: rgb("#0284c7"),
-          inset: 16pt,
-          radius: 10pt,
-          text(fill: white, weight: "bold", size: 20pt)[A0 SUMMARY\nREPORT]
-        )
-      ]
-    )
-  ]
-)
-
-#v(18pt)
-
-// =============================================================================
-// KPI STATS ROW
-// =============================================================================
-#grid(
-  columns: (1fr, 1fr, 1fr, 1fr),
-  gutter: 18pt,
-  kpi_card(value: "345,939.8 kg", label: "Total Catch Recorded", icon: "⚖️", border_color: rgb("#0284c7"), num_color: rgb("#0284c7")),
-  kpi_card(value: "36,350", label: "Landing Records", icon: "📋", border_color: rgb("#0d9488"), num_color: rgb("#0d9488")),
-  kpi_card(value: "14.83 kg", label: "Average Catch / Trip", icon: "📊", border_color: rgb("#3b82f6"), num_color: rgb("#1d4ed8")),
-  kpi_card(value: "28", label: "Monitored Landing Sites", icon: "📍", border_color: rgb("#8b5cf6"), num_color: rgb("#6d28d9"))
-)
-
-#v(20pt)
-
-// =============================================================================
-// MAIN CONTENT GRID (2 COLUMNS)
-// =============================================================================
-#grid(
-  columns: (1fr, 1fr),
-  gutter: 22pt,
-  [
-    // COLUMN 1
-    #card(title: "Geographic Distribution of Landings", icon: "🗺️")[
-      #image("figures/fig_map.png", width: 100%)
-      #v(6pt)
-      #text(size: 18pt, fill: rgb("#475569"))[
-        Spatial distribution of artisanal landings along the Tanzanian coast. Circle sizes reflect the relative number of sampling records recorded at each landing site.
-      ]
-    ]
-
-    #v(16pt)
-    #card(title: "Sampling Effort Over Time", icon: "📈")[
-      #image("figures/fig_effort.png", width: 100%)
-      #v(6pt)
-      #text(size: 18pt, fill: rgb("#475569"))[
-        Monthly record counts across active monitoring sites, illustrating temporal survey coverage and landing intensity.
-      ]
-    ]
-
-    #v(16pt)
-    #card(title: "Catch Per Unit Effort (CPUE) Trends", icon: "⚡")[
-      #image("figures/fig_cpue.png", width: 100%)
-      #v(6pt)
-      #text(size: 18pt, fill: rgb("#475569"))[
-        CPUE (kg / fisher / hour) calculated across landing events with fitted linear regression trajectories.
-      ]
-    ]
-
-    #v(16pt)
-    #card(title: "Top Landing Sites Overview", icon: "📋")[
-      #table(
+  // ROW 1, COL 2
+  card(
+    title: "How do landing sites compare, and which species groups dominate?",
+    subtitle: "Site-level catch volume and composition across reef fish, small pelagics, and tuna-like species.",
+    takeaway: [
+      *What this shows:* High dominance of reef-associated fishes indicates strong reliance on nearshore coral reef habitats, underscoring the importance of local BMU reef closures and gear rules.
+    ],
+  )[
+    #stack(
+      dir: ttb,
+      spacing: 10pt,
+      wcs_table(
         columns: (2fr, 1fr, 1fr),
         align: (left, right, right),
-        stroke: (x, y) => if y == 0 { (bottom: 2pt + rgb("#0284c7")) } else { (bottom: 0.5pt + rgb("#e2e8f0")) },
-        fill: (col, row) => if row == 0 { rgb("#e0f2fe") } else if calc.even(row) { rgb("#f8fafc") } else { white },
-        table.header(
-          [*Landing Site*], [*Records*], [*Total Catch (kg)*]
-        ),
-  [Moa], [5,343], [71,283.6],
-  [Msuka], [3,602], [46,617.0],
-  [Tongoni], [1,339], [39,310.4],
-  [Sahare], [3,751], [36,752.0],
-  [Mazizini], [2,400], [23,506.1],
-  [Mkoani], [2,082], [19,154.6],
-      )
-    ]
-  ],
-  [
-    // COLUMN 2
-    #card(title: "Landings by Fishing Vessel Type", icon: "⛵")[
-      #image("figures/fig_boat.png", width: 100%)
-      #v(6pt)
-      #text(size: 18pt, fill: rgb("#475569"))[
-        Artisanal fleet composition categorized by vessel type across active landing operations.
-      ]
-    ]
-
-    #v(16pt)
-    #card(title: "Species Group Breakdown by Site", icon: "🐠")[
-      #image("figures/fig_species_group.png", width: 100%)
-      #v(6pt)
-      #text(size: 18pt, fill: rgb("#475569"))[
-        Composition of catch groups (reef fish, small pelagic, tuna-like) across monitored coastal landing locations.
-      ]
-    ]
-
-    #v(16pt)
-    #card(title: "Landings by Fishing Gear Type", icon: "🎣")[
-      #image("figures/fig_gear.png", width: 100%)
-      #v(6pt)
-      #text(size: 18pt, fill: rgb("#475569"))[
-        Frequency of fishing gears utilized across recorded artisanal fishing operations.
-      ]
-    ]
-
-    #v(16pt)
-    #card(title: "Effort Index by Vessel & Site", icon: "⏱️")[
-      #image("figures/fig_vessel_effort.png", width: 100%)
-      #v(6pt)
-      #text(size: 18pt, fill: rgb("#475569"))[
-        Composite fishing effort index accounting for fisher crew sizes and landed vessel frequency.
-      ]
-    ]
-
-    #v(16pt)
-    #card(title: "Program Methodology & Data Citation", icon: "ℹ️")[
-      #text(size: 19pt, fill: rgb("#334155"))[
-        *Monitoring Protocol:* Catch data are gathered via standardized KoboToolbox digital surveys by trained community data enumerators in collaboration with Beach Management Units (BMUs) and Fisheries Officers. \
-        *Open Access Archive:* Datasets are curated and synchronized every 10 days. Primary records are deposited and openly accessible via Zenodo (DOI: 10.5281/zenodo.15229813).
-      ]
-    ]
-  ]
-)
-
-#v(20pt)
-
-// =============================================================================
-// FOOTER BANNER
-// =============================================================================
-#block(
-  fill: rgb("#0b2545"),
-  inset: 18pt,
-  radius: 12pt,
-  width: 100%,
-  [
-    #grid(
-      columns: (1fr, 1fr),
-      align: (left + horizon, right + horizon),
-      text(fill: rgb("#cbd5e1"), size: 18pt)[
-        Wildlife Conservation Society (WCS) Tanzania • Marine Program \
-        Protecting coral reefs, key marine ecosystems, and sustainable coastal livelihoods.
-      ],
-      text(fill: rgb("#94a3b8"), size: 16pt)[
-        Exported from CatchViz • Formatted with Typst • Generated: 2026-11-18 16:04
-      ]
+        header: ([*Landing Site*], [*Records*], [*Total Catch (kg)*]),
+        ..site_rows,
+      ),
+      image("figures/fig_species_group.png", width: 100%, height: 1fr, fit: "contain"),
     )
-  ]
+  ],
+
+  // ROW 2, COL 1
+  card(
+    title: "Which fishing vessels drive the bulk of artisanal landings?",
+    subtitle: "Recorded landing trips categorized by vessel class across active operations.",
+    takeaway: [
+      *What this shows:* Traditional small sail boats (ngalawa/mashua) account for the vast majority of trips, meaning fisheries interventions must remain accessible to non-motorized small-scale fishers.
+    ],
+  )[
+    #image("figures/fig_boat.png", width: 100%, height: 1fr, fit: "contain")
+  ],
+
+  // ROW 2, COL 2
+  card(
+    title: "Which gears catch the most fish — and which risk juvenile harvest?",
+    subtitle: "Frequency of fishing gears utilized across recorded artisanal operations.",
+    takeaway: [
+      *What this shows:* Basket traps (madema) and lines dominate bony fish landings, whereas fine-mesh nets and spearguns warrant close size-selectivity tracking to prevent juvenile depletion.
+    ],
+  )[
+    #image("figures/fig_gear.png", width: 100%, height: 1fr, fit: "contain")
+  ],
+
+  // ROW 3, COL 1
+  card(
+    title: "How has monitoring effort and landing intensity changed over time?",
+    subtitle: "Monthly record counts illustrating temporal survey coverage and seasonal shifts.",
+    takeaway: [
+      *What this shows:* Monthly fluctuations reflect both seasonal monsoon fishing patterns (Kaskazi vs. Kusi) and enumerator survey consistency across reporting periods.
+    ],
+  )[
+    #image("figures/fig_effort.png", width: 100%, height: 1fr, fit: "contain")
+  ],
+
+  // ROW 3, COL 2
+  card(
+    title: "Is catch per unit effort (CPUE) declining, stable, or recovering?",
+    subtitle: "Trip-level CPUE (kg / fisher / hour) with fitted linear regression trajectory.",
+    takeaway: [
+      *What this shows:* CPUE standardizes catch by crew size and hours fished—a flat or rising trend suggests stable stock availability, whereas a sustained downward slope signals local overfishing.
+    ],
+  )[
+    #image("figures/fig_cpue.png", width: 100%, height: 1fr, fit: "contain")
+  ],
 )

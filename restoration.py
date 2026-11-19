@@ -34,15 +34,19 @@ coords = [
 ['transplanting_msuka_panga_punge',-4.8703,39.8054]
 ]
 
-coords = pd.DataFrame(coords, columns=['site_name', 'latitude', 'longitude'])
+coords_sites = [
+['moa',-4.77763, 39.19956],
+['kigombe',-5.26431,39.07310],
+['msuka',-4.90274,39.72391]
+]
+
+coords = pd.DataFrame(coords_sites, columns=['project_site', 'latitude', 'longitude'])
 
 df = pd.merge(df, coords)
 
 # --- Sidebar Filters ---
 
 st.sidebar.header("Filters ⚙️")
-
-
 
 # Time Aggregation Filter
 time_agg = st.sidebar.selectbox(
@@ -85,7 +89,7 @@ if len(date_range) == 2:
 
 # site filter
 
-all_sites = sorted(df['site_name'].dropna().unique())
+all_sites = sorted(df['project_site'].dropna().unique())
 selected_site_name= st.sidebar.multiselect(
     "Select Site(s):",
     options=all_sites,
@@ -96,7 +100,8 @@ selected_site_name= st.sidebar.multiselect(
 
 # --- Apply Filters ---
 
-filtered_df = df[(df['date'] >= start_date) & (df['date'] <= end_date) & (df['site_name'].isin(selected_site_name))]
+filtered_df = df[(df['date'] >= start_date) & (df['date'] <= end_date) & (df['project_site'].isin(selected_site_name))]
+# filtered_df = df[(df['date'] >= start_date) & (df['date'] <= end_date) & (df['site_name'].isin(selected_site_name))]
 
 # --- Main Page Content ---
 
@@ -184,64 +189,89 @@ if not filtered_df.empty:
 
 
     # 2. Define Layer Data with reset_index()
-    nursery_data = (
-        filtered_df[filtered_df['site_type'] == 'nursery']
-        .groupby('site_name')
+    # nursery_data = (
+    #     filtered_df[filtered_df['site_type'] == 'nursery']
+    #     .groupby('site_name')
+    #     .max()
+    #     .reset_index()
+    # )
+    # nursery_data['fragment_count'] = nursery_data['total_fragments_in_nursery_to_date']
+
+    # transplanting_data = (
+    #     filtered_df[filtered_df['site_type'] == 'transplanting']
+    #     .groupby('site_name')
+    #     .max()
+    #     .reset_index()
+    # )
+
+    # transplanting_data['fragment_count'] = transplanting_data['total_fragments_transplanted_to_date']
+
+    all_data = (
+        filtered_df
+        .groupby('project_site')
         .max()
         .reset_index()
     )
-    nursery_data['fragment_count'] = nursery_data['total_fragments_in_nursery_to_date']
+    
+    all_data['fragment_count'] = all_data['total_fragments_transplanted_to_date'] + all_data['total_fragments_in_nursery_to_date'] 
 
-    transplanting_data = (
-        filtered_df[filtered_df['site_type'] == 'transplanting']
-        .groupby('site_name')
-        .max()
-        .reset_index()
-    )
-
-    transplanting_data['fragment_count'] = transplanting_data['total_fragments_transplanted_to_date']
 
     from pydeck.types import String
     
 
     # 3. Define the Dot Layers
-    dots_layer_nursery = pdk.Layer(
+    # dots_layer_nursery = pdk.Layer(
+    #     'ScatterplotLayer',
+    #     data=nursery_data,
+    #     get_position='[longitude, latitude]',
+    #     get_radius="total_fragments_in_nursery_to_date / 1e3",
+    #     radius_units=String('pixels'),
+    # #     radius_min_pixels=3,
+    # #     radius_max_pixels=600,
+    #     pickable=True,
+    #     get_fill_color='[100, 100, 0, 160]',
+    # )
+    
+
+    # dots_layer_transplanting = pdk.Layer(
+    #     'ScatterplotLayer',
+    #     data=transplanting_data,
+    #     get_position='[longitude, latitude]',
+    #     get_radius="total_fragments_transplanted_to_date/1e3",
+    #     radius_units=String('pixels'), # do not touch
+    #     #point_radius_units='pixels',
+    #     #radius_min_pixels=3,
+    #     #radius_max_pixels=600,
+    #     get_fill_color='[200, 30, 60, 120]',
+    #     pickable=True,
+    # )
+
+    dots_layer_all = pdk.Layer(
         'ScatterplotLayer',
-        data=nursery_data,
+        data=all_data,
         get_position='[longitude, latitude]',
-        get_radius="total_fragments_in_nursery_to_date / 1e3",
+        get_radius="fragment_count / 1e3",
         radius_units=String('pixels'),
     #     radius_min_pixels=3,
     #     radius_max_pixels=600,
         pickable=True,
         get_fill_color='[100, 100, 0, 160]',
     )
-    
 
-    dots_layer_transplanting = pdk.Layer(
-        'ScatterplotLayer',
-        data=transplanting_data,
-        get_position='[longitude, latitude]',
-        get_radius="total_fragments_transplanted_to_date/1e3",
-        radius_units=String('pixels'), # do not touch
-        #point_radius_units='pixels',
-        #radius_min_pixels=3,
-        #radius_max_pixels=600,
-        get_fill_color='[200, 30, 60, 120]',
-        pickable=True,
-    )
+
+
 
     # 4. Render the Map
     st.pydeck_chart(pdk.Deck(
         map_style='light',
-        layers=[dots_layer_nursery, dots_layer_transplanting],
+        layers=[dots_layer_all],
         initial_view_state=pdk.ViewState(
             latitude=np.mean(filtered_df.latitude),
             longitude=np.mean(filtered_df.longitude),
             zoom=7,
             pitch=0,
         ),
-            tooltip={"html": """<h4>{project_site}, {site_type}</h4>
+            tooltip={"html": """<h4>{project_site}</h4>
                 <p>Fragments,<br/>
                 in Nursery: <b>{total_fragments_in_nursery_to_date}</b><br/>
                 Transplanted: <b>{total_fragments_transplanted_to_date}</b></p>"""}

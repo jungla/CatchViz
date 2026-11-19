@@ -70,41 +70,63 @@ dataset_choice = st.radio(
 
 if "Restoration" in dataset_choice:
     report_type = "restoration"
-    csv_file = "RESTORATION_kobo_data.csv"
+    csv_filename = "RESTORATION_kobo_data.csv"
 elif "Shark" in dataset_choice:
     report_type = "sharks_rays"
-    csv_file = "SHARK_kobo_data.csv"
+    csv_filename = "SHARK_kobo_data.csv"
 else:
     report_type = "bony_fishes"
-    csv_file = "CATCH_kobo_data.csv"
+    csv_filename = "CATCH_kobo_data.csv"
 
 is_sharks = (report_type == "sharks_rays")
 is_restoration = (report_type == "restoration")
 
-@st.cache_data
-def load_data(file_path):
-    if not Path(file_path).exists():
-        return pd.DataFrame()
-    return pd.read_csv(file_path, low_memory=False)
 
-df_raw = load_data(csv_file)
+@st.cache_data
+def load_data(filename: str) -> pd.DataFrame:
+    for candidate in [Path("kobo_data") / filename, Path(filename)]:
+        if candidate.exists():
+            return pd.read_csv(candidate, low_memory=False)
+    return pd.DataFrame()
+
+
+df_raw = load_data(csv_filename)
 
 if df_raw.empty:
-    st.error(f"Could not load data file `{csv_file}`. Please verify it exists in the workspace.")
+    st.error(f"Could not load data file `{csv_filename}` (checked `kobo_data/` and workspace root).")
     st.stop()
 
-# Filter out tests for restoration if applicable
-if is_restoration and 'test' in df_raw.columns:
-    df_raw = df_raw[df_raw['test'] != 'yes']
+# Restoration-specific preprocessing (matching restoration.py)
+if is_restoration:
+    if 'Date' in df_raw.columns:
+        df_raw['date'] = pd.to_datetime(df_raw['Date'], format='mixed', errors='coerce').dt.date
+        df_raw['datetime'] = pd.to_datetime(df_raw['Date'], format='mixed', errors='coerce')
+    if 'test' in df_raw.columns:
+        df_raw = df_raw[df_raw['test'] != 'yes']
+
+    coords_sites = pd.DataFrame(
+        [
+            ['moa', -4.77763, 39.19956],
+            ['kigombe', -5.26431, 39.07310],
+            ['msuka', -4.90274, 39.72391],
+        ],
+        columns=['project_site', 'latitude', 'longitude'],
+    )
+    if 'project_site' in df_raw.columns:
+        df_raw = df_raw.drop(columns=[c for c in ['latitude', 'longitude'] if c in df_raw.columns])
+        df_raw = pd.merge(df_raw, coords_sites, on='project_site', how='inner')
 
 # Date handling
 date_col = 'date' if 'date' in df_raw.columns else ('today' if 'today' in df_raw.columns else ('Date' if 'Date' in df_raw.columns else None))
-if date_col:
+if date_col and not is_restoration:
     df_raw[date_col] = pd.to_datetime(df_raw[date_col], errors='coerce').dt.date
 
-# Sidebar / Expander Filters
+# Filters
 st.subheader("⚙️ Poster Filters & Scope")
-col_f1, col_f2, col_f3 = st.columns(3)
+if is_restoration:
+    col_f1, col_f2 = st.columns(2)
+else:
+    col_f1, col_f2, col_f3 = st.columns(3)
 
 # 1. Date filter
 with col_f1:
@@ -112,7 +134,7 @@ with col_f1:
         valid_dates = df_raw[date_col].dropna()
         min_date = valid_dates.min() if not valid_dates.empty else date(2022, 1, 1)
         max_date = valid_dates.max() if not valid_dates.empty else date.today()
-        
+
         date_range = st.date_input(
             "Reporting Date Range:",
             value=(min_date, max_date),
@@ -129,37 +151,39 @@ with col_f1:
 # 2. Location filter
 with col_f2:
     if is_restoration:
-        loc_col = 'site_name' if 'site_name' in df_raw.columns else 'project_site'
+        loc_col = 'project_site' if 'project_site' in df_raw.columns else 'site_name'
     else:
         loc_col = 'landing_site' if 'landing_site' in df_raw.columns else 'market'
-    all_locs = sorted(df_raw[loc_col].dropna().unique().tolist())
+
+    all_locs = sorted(df_raw[loc_col].dropna().unique().tolist()) if loc_col in df_raw.columns else []
     selected_locs = st.multiselect(
         f"Select {clean_label(loc_col)}(s):",
         options=all_locs,
         default=all_locs
     )
 
-# 3. Group filter
-with col_f3:
-    if is_restoration:
-        group_col = 'site_type' if 'site_type' in df_raw.columns else None
-        default_groups = ['nursery', 'transplanting']
-    elif is_sharks:
-        group_col = 'type' if 'type' in df_raw.columns else None
-        default_groups = ['Shark', 'Ray']
-    else:
-        group_col = 'group_catch' if 'group_catch' in df_raw.columns else None
-        default_groups = ['reef_fish', 'tuna_like', 'small_pelagic']
+# 3. Group filter (for Bony Fishes & Sharks/Rays; Restoration uses all records for selected project_sites)
+if not is_restoration:
+    with col_f3:
+        if is_sharks:
+            group_col = 'type' if 'type' in df_raw.columns else None
+            default_groups = ['Shark', 'Ray']
+        else:
+            group_col = 'group_catch' if 'group_catch' in df_raw.columns else None
+            default_groups = ['reef_fish', 'tuna_like', 'small_pelagic']
 
-    if group_col and group_col in df_raw.columns:
-        all_groups = sorted(df_raw[group_col].dropna().unique().tolist())
-        selected_groups = st.multiselect(
-            "Target Groups:",
-            options=all_groups,
-            default=[g for g in default_groups if g in all_groups] or all_groups
-        )
-    else:
-        selected_groups = []
+        if group_col and group_col in df_raw.columns:
+            all_groups = sorted(df_raw[group_col].dropna().unique().tolist())
+            selected_groups = st.multiselect(
+                "Target Groups:",
+                options=all_groups,
+                default=[g for g in default_groups if g in all_groups] or all_groups
+            )
+        else:
+            selected_groups = []
+else:
+    group_col = None
+    selected_groups = []
 
 # Apply Filters
 filtered_df = df_raw.copy()
@@ -172,37 +196,48 @@ if selected_locs and loc_col in filtered_df.columns:
 if selected_groups and group_col and group_col in filtered_df.columns:
     filtered_df = filtered_df[filtered_df[group_col].isin(selected_groups)]
 
-# Metrics Preview
+# Metrics Preview (matching restoration.py logic for restoration)
 st.markdown("### 📊 Filtered Data Summary")
 m1, m2, m3, m4 = st.columns(4)
-with m1:
-    st.metric("Total Records", f"{len(filtered_df):,}")
-with m2:
-    if is_restoration:
-        transp = np.nansum(pd.to_numeric(filtered_df.groupby('site_name')['total_fragments_transplanted_to_date'].max(), errors='coerce')) if 'site_name' in filtered_df.columns and 'total_fragments_transplanted_to_date' in filtered_df.columns else 0
-        st.metric("Fragments Outplanted", f"{int(transp):,}")
-    elif is_sharks:
-        wgt = filtered_df['weight'].sum() if 'weight' in filtered_df.columns else 0
-        st.metric("Total Biomass (kg)", f"{wgt:,.1f}")
-    else:
-        wgt = filtered_df['weight_catch'].sum() if 'weight_catch' in filtered_df.columns else 0
-        st.metric("Total Catch (kg)", f"{wgt:,.1f}")
-with m3:
-    if is_restoration:
-        stars = np.nansum(pd.to_numeric(filtered_df.groupby('site_name')['total_reef_starts_deployed_to_date'].max(), errors='coerce')) if 'site_name' in filtered_df.columns and 'total_reef_starts_deployed_to_date' in filtered_df.columns else 0
-        st.metric("Reef Stars Installed", f"{int(stars):,}")
-    elif is_sharks:
-        sp_cnt = len(filtered_df['Scientific_name'].dropna().unique()) if 'Scientific_name' in filtered_df.columns else 0
-        st.metric("Species Count", f"{sp_cnt}")
-    else:
-        avg_w = filtered_df['weight_catch'].mean() if 'weight_catch' in filtered_df.columns else 0
-        st.metric("Avg Catch / Trip (kg)", f"{avg_w:,.2f}")
-with m4:
-    if is_restoration:
-        transp_val = np.nansum(pd.to_numeric(filtered_df.groupby('site_name')['total_fragments_transplanted_to_date'].max(), errors='coerce')) if 'site_name' in filtered_df.columns and 'total_fragments_transplanted_to_date' in filtered_df.columns else 0
-        area_ha = (transp_val / 2) / 1e4
-        st.metric("Restored Area (ha)", f"{area_ha:,.2f}")
-    else:
+
+if is_restoration:
+    def _max_by_site(col_name: str) -> float:
+        if filtered_df.empty or 'site_name' not in filtered_df.columns or col_name not in filtered_df.columns:
+            return 0.0
+        s = pd.to_numeric(filtered_df[col_name], errors='coerce')
+        return float(np.nansum(s.groupby(filtered_df['site_name']).max()))
+
+    total_transplanted_corals = _max_by_site('total_fragments_transplanted_to_date')
+    total_reefstars = _max_by_site('total_reef_starts_deployed_to_date')
+    total_nursery_tables = _max_by_site('total_tables_in_nursery_to_date')
+    total_area_restored = (total_transplanted_corals / 2) / 1e4
+
+    with m1:
+        st.metric("Coral Fragments Transplanted", f"{int(total_transplanted_corals):,}")
+    with m2:
+        st.metric("Number of Reef Stars Installed", f"{int(total_reefstars):,}")
+    with m3:
+        st.metric("Number of Tables in Nurseries", f"{int(total_nursery_tables):,}")
+    with m4:
+        st.metric("Total Area Transplanted (ha)", f"{total_area_restored:,.2f}")
+else:
+    with m1:
+        st.metric("Total Records", f"{len(filtered_df):,}")
+    with m2:
+        if is_sharks:
+            wgt = filtered_df['weight'].sum() if 'weight' in filtered_df.columns else 0
+            st.metric("Total Biomass (kg)", f"{wgt:,.1f}")
+        else:
+            wgt = filtered_df['weight_catch'].sum() if 'weight_catch' in filtered_df.columns else 0
+            st.metric("Total Catch (kg)", f"{wgt:,.1f}")
+    with m3:
+        if is_sharks:
+            sp_cnt = len(filtered_df['Scientific_name'].dropna().unique()) if 'Scientific_name' in filtered_df.columns else 0
+            st.metric("Species Count", f"{sp_cnt}")
+        else:
+            avg_w = filtered_df['weight_catch'].mean() if 'weight_catch' in filtered_df.columns else 0
+            st.metric("Avg Catch / Trip (kg)", f"{avg_w:,.2f}")
+    with m4:
         n_loc = len(filtered_df[loc_col].dropna().unique()) if loc_col in filtered_df.columns else 0
         st.metric("Monitored Locations", f"{n_loc}")
 
@@ -254,4 +289,3 @@ if st.button("🎨 Build & Export A0 Poster", type="primary", use_container_widt
                     mime="application/zip",
                     use_container_width=True
                 )
-

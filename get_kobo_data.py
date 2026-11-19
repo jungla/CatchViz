@@ -256,7 +256,7 @@ for dataset in datasets:
    fname_out = 'kobo_data/'+dataset+'_'+str(start_rec)+'_'+str(end_rec)+'_kobo_data.xlsx'
  
    if not Path(fname_out).is_file():
-    print(f"downloading file chunk: {fname_out.name}")
+    print(f"downloading file chunk: {fname_out}")
     start_id, end_id = find_start_end_ids(ASSET_UID[dataset], start_rec, end_rec)
     #print(start_id)
     #print(end_id)
@@ -280,7 +280,7 @@ for dataset in datasets:
   fname_out = 'kobo_data/'+dataset+'_'+str(start_rec)+'_'+str(end_rec)+'_kobo_data.xlsx'
 
   if not Path(fname_out).is_file():
-   print(f"downloading short file: {fname_out.name}")
+   print(f"downloading short file: {fname_out}")
    start_id, end_id = find_start_end_ids(ASSET_UID[dataset], start_rec, end_rec)
    #print(start_id)
    #print(end_id)
