@@ -198,7 +198,7 @@ def upload_to_github(file_path, repo_name, token, repo_target_path=None):
          content = file.read()
 
         # Path in the repo where you want to save it
-        target_path = repo_target_path if repo_target_path else Path(file_path).name
+        target_path = repo_target_path if repo_target_path else str(file_path).replace("\\", "/")
 
         # Check if file exists to update it, or create new
         try:
@@ -302,4 +302,4 @@ for dataset in datasets:
  data_out.to_csv('kobo_data/'+dataset+'_kobo_data.csv')
 
  # 6. upload to github
- upload_to_github('kobo_data/'+dataset+'_kobo_data.csv', 'jungla/CatchViz/kobo_data/', os.environ['GIT_TOKEN'])
+ upload_to_github('kobo_data/'+dataset+'_kobo_data.csv', 'jungla/CatchViz', os.environ['GIT_TOKEN'], repo_target_path='kobo_data/'+dataset+'_kobo_data.csv')
