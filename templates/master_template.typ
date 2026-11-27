@@ -59,7 +59,7 @@
   inset: 22pt,
   radius: 0pt,
   stroke: (
-    top: 4pt + accent,
+    top: 2pt + accent,
     bottom: 0.75pt + wcs_line,
     left: 0.75pt + wcs_line,
     right: 0.75pt + wcs_line,
@@ -108,7 +108,7 @@
 // =============================================================================
 #let poster_header(
   logo_filename: "wcs_logo.png",
-  kicker: "WCS TANZANIA MARINE PROGRAM  •  MONITORING PLATFORM",
+  kicker: "WCS TANZANIA MARINE PROGRAM  •  MONITORING PROGRAM",
   title: "",
   meta_items: (),
   badge_text: "A0 BRIEF",

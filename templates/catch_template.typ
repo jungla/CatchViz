@@ -16,11 +16,9 @@
   header: poster_header(
     logo_filename: logo_filename,
     kicker: "WCS TANZANIA MARINE PROGRAM  •  CATCH MONITORING PLATFORM",
-    title: "Overview — How is the fishery doing, and how do districts/BMUs compare?",
+    title: selected_sites + " Landing Site",
     meta_items: (
-      [*Target Group:* Bony Fishes],
       [*Period:* #start_date to #end_date],
-      [*Sites:* #selected_sites],
     ),
     badge_text: "A0 FISHERY\nBRIEF",
     kpis: (
@@ -43,10 +41,7 @@
   // ROW 1, COL 1
   card(
     title: "Where are artisanal landings concentrated along the coast?",
-    subtitle: "Spatial distribution of monitored landings across Tanzania and Zanzibar.",
-    takeaway: [
-      *What this shows:* Circle area reflects relative sampling volume per landing site. Concentration around key coastal hubs highlights where monitoring coverage and fishing pressure are highest.
-    ],
+    subtitle: "Spatial distribution of monitored landings across Tanzania and Zanzibar. Circle area reflects relative sampling volume per landing site. Concentration around key coastal hubs highlights where monitoring coverage and fishing pressure are highest.",
   )[
     #image("figures/fig_map.png", width: 100%, height: 1fr, fit: "contain")
   ],

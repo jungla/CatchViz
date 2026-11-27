@@ -219,11 +219,6 @@ _COASTLINE_RINGS_CACHE: Optional[List[List[Tuple[float, float]]]] = None
 
 TILE_PROVIDERS = [
     (
-        "carto_positron",
-        "https://basemaps.cartocdn.com/light_all/{z}/{x}/{y}.png",
-        "© OpenStreetMap contributors, © CARTO",
-    ),
-    (
         "osm_standard",
         "https://tile.openstreetmap.org/{z}/{x}/{y}.png",
         "© OpenStreetMap contributors",

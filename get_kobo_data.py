@@ -302,4 +302,4 @@ for dataset in datasets:
  data_out.to_csv('kobo_data/'+dataset+'_kobo_data.csv')
 
  # 6. upload to github
- upload_to_github('kobo_data/'+dataset+'_kobo_data.csv', 'jungla/CatchViz', os.environ['GIT_TOKEN'])
+ upload_to_github('kobo_data/'+dataset+'_kobo_data.csv', 'jungla/CatchViz/kobo_data/', os.environ['GIT_TOKEN'])

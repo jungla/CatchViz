@@ -3,18 +3,13 @@
 
 #let start_date = "2010-01-01"
 #let end_date = "2026-11-18"
-#let selected_sites = "28 sites selected (bwawani, chole, chwaka, fumba...)"
-#let total_catch = "349,843.7 kg"
-#let num_records = "36,683"
-#let avg_catch = "14.85 kg"
+#let selected_sites = "kigombe"
+#let total_catch = "8,563.0 kg"
+#let num_records = "2,350"
+#let avg_catch = "5.46 kg"
 #let logo_filename = "wcs_logo.png"
 #let site_rows = (
-    [Moa], [5,418], [72,160.1],
-  [Msuka], [3,651], [47,309.0],
-  [Tongoni], [1,359], [39,342.4],
-  [Sahare], [3,773], [37,049.0],
-  [Mazizini], [2,407], [23,668.1],
-  [Mkoani], [2,108], [19,353.4],
+    [Kigombe], [2,350], [8,563.0],
 )
 
 #wcs_poster(
@@ -42,7 +37,7 @@
       #h(16pt) • #h(16pt)
       *Data Archive:* Curated and synchronized every 10 days via Zenodo (*DOI: 10.5281/zenodo.15229813*).
     ],
-    generated_time: "2026-11-19 13:34",
+    generated_time: "2026-11-19 15:32",
   ),
 
   // ROW 1, COL 1
