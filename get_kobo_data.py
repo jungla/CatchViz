@@ -189,7 +189,7 @@ def upload_to_github(file_path, repo_name, token, repo_target_path=None):
 
     try:
         print("Connecting to GitHub...")
-        g = Github(auth=auth)
+        g = Github(auth=auth, timeout=3600)
         repo = g.get_repo(repo_name) # e.g., "yourusername/catch-data"
 
         # Read the file
